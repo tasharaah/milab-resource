@@ -1,0 +1,45 @@
+{% extends 'labapp/base.html' %}
+
+{% block title %}New Booking | MI Lab{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Make a New Booking</h1>
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    {{ form.non_field_errors }}
+                    <div class="mb-3">
+                        <label for="id_resource" class="form-label">Resource</label>
+                        {{ form.resource }}
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_start_time" class="form-label">Start Time</label>
+                        {{ form.start_time }}
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_end_time" class="form-label">End Time</label>
+                        {{ form.end_time }}
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_software" class="form-label">Software/Tool</label>
+                        {{ form.software }}
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_description" class="form-label">Description (optional)</label>
+                        {{ form.description }}
+                    </div>
+                    {% if form.errors %}
+                        <div class="alert alert-danger">
+                            {{ form.errors }}
+                        </div>
+                    {% endif %}
+                    <button type="submit" class="btn btn-primary">Submit Booking</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

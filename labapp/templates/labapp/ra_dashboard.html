@@ -1,0 +1,118 @@
+{% extends 'labapp/base.html' %}
+
+{% block title %}RA Dashboard | MI Lab{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Research Assistant Dashboard</h1>
+
+<div class="row">
+    <div class="col-md-4 mb-3">
+        <div class="stat-card h-100">
+            <div class="stat-top">
+                <div class="stat-icon bg-primary"><i class="fa fa-desktop"></i></div>
+                <div>
+                    <div class="stat-label">Total Resources</div>
+                    <div class="stat-value">{{ total_resources }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="stat-card h-100">
+            <div class="stat-top">
+                <div class="stat-icon bg-success"><i class="fa fa-check-circle"></i></div>
+                <div>
+                    <div class="stat-label">Available Resources</div>
+                    <div class="stat-value">{{ available_resources }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="stat-card h-100">
+            <div class="stat-top">
+                <div class="stat-icon bg-warning"><i class="fa fa-clock"></i></div>
+                <div>
+                    <div class="stat-label">Active Bookings</div>
+                    <div class="stat-value">{{ my_active_bookings|length }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <h3>Your Active Bookings</h3>
+        {% if my_active_bookings %}
+        <div class="table-responsive">
+            <table class="table table-striped align-middle">
+                <thead>
+                    <tr>
+                        <th scope="col">Resource</th>
+                        <th scope="col">GPU</th>
+                        <th scope="col">Software</th>
+                        <th scope="col">Start</th>
+                        <th scope="col">End</th>
+                        <th scope="col">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for booking in my_active_bookings %}
+                    <tr>
+                        <td>{{ booking.resource.name }}</td>
+                        <td>{{ booking.resource.gpu }}</td>
+                        <td>{{ booking.software|default:'—' }}</td>
+                        <td>{{ booking.start_time|date:'Y-m-d H:i' }}</td>
+                        <td>{{ booking.end_time|date:'Y-m-d H:i' }}</td>
+                        <td>
+                            <a href="{% url 'release_booking' booking.id %}" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to release this resource?');">Release</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p>You have no active bookings. <a href="{% url 'create_booking' %}">Make a new booking</a>.</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <h3>Recent Past Bookings</h3>
+        {% if my_past_bookings %}
+        <div class="table-responsive">
+            <table class="table table-striped align-middle">
+                <thead>
+                    <tr>
+                        <th scope="col">Resource</th>
+                        <th scope="col">GPU</th>
+                        <th scope="col">Software</th>
+                        <th scope="col">Start</th>
+                        <th scope="col">End</th>
+                        <th scope="col">Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for booking in my_past_bookings %}
+                    <tr>
+                        <td>{{ booking.resource.name }}</td>
+                        <td>{{ booking.resource.gpu }}</td>
+                        <td>{{ booking.software|default:'—' }}</td>
+                        <td>{{ booking.start_time|date:'Y-m-d H:i' }}</td>
+                        <td>{{ booking.end_time|date:'Y-m-d H:i' }}</td>
+                        <td>{{ booking.description|default:'—' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p>No past bookings recorded.</p>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,90 @@
+/*
+ * Custom styles for the MI Lab application
+ *
+ * These styles are inspired by the class scheduler UI. The design uses
+ * soft colours, subtle shadows and modern cards. CSS variables are
+ * defined on :root to allow easy colour changes. Cards with the
+ * .stat-card class show key metrics on the dashboards. Icons within
+ * cards are coloured squares with rounded corners. Tables are styled
+ * for readability on small screens.
+ */
+
+/* Colour palette */
+:root {
+    --nsu-sky: #00a3e0;
+    --nsu-navy: #002d62;
+    --bg: #f5f8fb;
+    --text: #333;
+    --card-bg: #ffffff;
+    --card-shadow: rgba(0, 0, 0, 0.05);
+    --radius: 0.75rem;
+}
+
+body {
+    background-color: var(--bg);
+    color: var(--text);
+}
+
+.navbar-brand {
+    font-weight: bold;
+}
+
+/* Table adjustments for responsive display */
+.table thead th {
+    white-space: nowrap;
+}
+
+/* Stat card styles */
+.stat-card {
+    background-color: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: 0 2px 4px var(--card-shadow);
+    padding: 1rem;
+    height: 100%;
+}
+
+.stat-top {
+    display: flex;
+    align-items: center;
+}
+
+.stat-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.5rem;
+    margin-right: 0.75rem;
+    color: #fff;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+.stat-value {
+    font-size: 1.4rem;
+    font-weight: bold;
+}
+
+/* Buttons and badges */
+.badge-soft {
+    background-color: rgba(0, 0, 0, 0.05);
+    color: var(--text);
+    border-radius: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+}
+
+/* Alert styling override to integrate with our palette */
+.alert {
+    border-radius: var(--radius);
+}
+
+/* Chart container ensures consistent height */
+.chart-container {
+    position: relative;
+    height: 300px;
+}

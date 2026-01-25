@@ -1,0 +1,78 @@
+{% extends 'labapp/base.html' %}
+
+{% block title %}My Bookings | MI Lab{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">My Bookings</h1>
+
+<div class="mb-4">
+    <a href="{% url 'create_booking' %}" class="btn btn-success">New Booking</a>
+</div>
+
+<h3>Active Bookings</h3>
+{% if active_bookings %}
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead>
+            <tr>
+                <th scope="col">Resource</th>
+                <th scope="col">GPU</th>
+                <th scope="col">Software</th>
+                <th scope="col">Start</th>
+                <th scope="col">End</th>
+                <th scope="col">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for booking in active_bookings %}
+            <tr>
+                <td>{{ booking.resource.name }}</td>
+                <td>{{ booking.resource.gpu }}</td>
+                <td>{{ booking.software|default:'—' }}</td>
+                <td>{{ booking.start_time|date:'Y-m-d H:i' }}</td>
+                <td>{{ booking.end_time|date:'Y-m-d H:i' }}</td>
+                <td>
+                    <a href="{% url 'release_booking' booking.id %}" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to release this resource?');">Release</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p>No active bookings.</p>
+{% endif %}
+
+<h3 class="mt-4">Past Bookings</h3>
+{% if past_bookings %}
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead>
+            <tr>
+                <th scope="col">Resource</th>
+                <th scope="col">GPU</th>
+                <th scope="col">Software</th>
+                <th scope="col">Start</th>
+                <th scope="col">End</th>
+                <th scope="col">Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for booking in past_bookings %}
+            <tr>
+                <td>{{ booking.resource.name }}</td>
+                <td>{{ booking.resource.gpu }}</td>
+                <td>{{ booking.software|default:'—' }}</td>
+                <td>{{ booking.start_time|date:'Y-m-d H:i' }}</td>
+                <td>{{ booking.end_time|date:'Y-m-d H:i' }}</td>
+                <td>{{ booking.description|default:'—' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p>No past bookings.</p>
+{% endif %}
+
+{% endblock %}

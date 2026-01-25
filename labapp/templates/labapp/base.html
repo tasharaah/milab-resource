@@ -1,0 +1,214 @@
+{# labapp/templates/labapp/base.html #}
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>{% block title %}MI Lab Resource Manager{% endblock %}</title>
+
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Font Awesome Icons -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+
+  <!-- App CSS (optional if you already have) -->
+  <link rel="stylesheet" href="{% static 'labapp/css/styles.css' %}">
+
+  <!-- PWA -->
+  <link rel="manifest" href="{% static 'manifest.json' %}">
+  <meta name="theme-color" content="#2f80ed">
+
+  <style>
+    :root{
+      --nsu-sky:#2f80ed;
+      --nsu-sky-2:#56ccf2;
+      --nsu-navy:#0b2a4a;
+      --bg:#f7fbff;
+      --card:#ffffff;
+      --muted:#6b7a90;
+      --border:#e6eef7;
+      --shadow: 0 14px 35px rgba(12, 44, 74, .12);
+      --radius: 18px;
+    }
+
+    body{
+      min-height: 100vh;
+      background: var(--bg);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      color: var(--nsu-navy);
+    }
+
+    /* Topbar */
+    .topbar{
+      background: linear-gradient(90deg, var(--nsu-sky), var(--nsu-sky-2));
+      color: #fff;
+      border-bottom: 1px solid rgba(255,255,255,.25);
+    }
+    .brand-wrap{ display:flex; align-items:center; gap:16px; }
+    .brand-logo{
+      width:72px; height:72px;
+      background:transparent; border:none; border-radius:0;
+      display:flex; align-items:center; justify-content:center;
+      overflow:visible;
+    }
+    .brand-logo img{ width:72px; height:72px; object-fit:contain; display:block; }
+
+    .brand-title{
+      font-weight: 900;
+      letter-spacing: .2px;
+      margin: 0;
+      font-size: 1.35rem;
+      line-height: 1.05;
+    }
+    .brand-sub{
+      margin: .25rem 0 0;
+      opacity: .95;
+      font-size: 1rem;
+      line-height: 1.05;
+    }
+
+    .pill{
+      background: rgba(255,255,255,.18);
+      border: 1px solid rgba(255,255,255,.25);
+      color:#fff;
+      border-radius: 999px;
+      padding: .35rem .75rem;
+      font-weight: 700;
+      font-size: .9rem;
+      display: inline-flex;
+      align-items: center;
+      gap: .45rem;
+      white-space: nowrap;
+      text-decoration: none;
+    }
+    a.pill:hover{
+      background: rgba(255,255,255,.30);
+      border-color: rgba(255,255,255,.45);
+      text-decoration: none;
+      color:#fff;
+    }
+
+    /* Nav pills (links row) */
+    .navpills{
+      display:flex;
+      flex-wrap:wrap;
+      gap:.5rem;
+    }
+
+    /* Messages */
+    .alert{
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      box-shadow: 0 6px 16px rgba(12,44,74,.06);
+    }
+
+    /* Small helper */
+    .divider{
+      height:1px;
+      background: var(--border);
+      margin: 1.25rem 0;
+    }
+  </style>
+
+  {% block extra_head %}{% endblock %}
+</head>
+
+<body>
+
+  <!-- Topbar -->
+  <div class="topbar py-3">
+    <div class="container d-flex align-items-center justify-content-between flex-wrap gap-3 mb-2">
+      <div class="brand-wrap">
+        <div class="brand-logo">
+          {# Put your logo in: labapp/static/img/nsu_logo.png (or change path) #}
+          <img src="{% static 'img/nsu_logo.png' %}" alt="NSU Logo">
+        </div>
+
+        <div>
+          <p class="brand-title">MI Lab Resource Manager</p>
+          <p class="brand-sub">North South University</p>
+        </div>
+      </div>
+
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        {% if user.is_authenticated %}
+          <span class="pill">
+            <i class="fa-solid fa-user"></i>
+            {{ user.get_full_name|default:user.username }}
+          </span>
+
+          <span class="pill">
+            <i class="fa-solid fa-id-badge"></i>
+            {% if user.is_superuser or user.is_staff %}
+              Admin
+            {% else %}
+              {{ user.role|default:"RA" }}
+            {% endif %}
+          </span>
+
+          <form method="post" action="{% url 'logout' %}" class="d-inline">
+            {% csrf_token %}
+            <button type="submit" class="pill" style="background: rgba(255,255,255,.18)" onclick="return confirm('Are you sure you want to logout?');">
+                <i class="fa-solid fa-right-from-bracket"></i> Logout
+            </button>
+          </form>
+          
+        {% else %}
+          <a class="pill" href="{% url 'login' %}">
+            <i class="fa-solid fa-right-to-bracket"></i> Login
+          </a>
+        {% endif %}
+      </div>
+    </div>
+
+    {# SECOND ROW: quick nav links (optional) #}
+    {% if user.is_authenticated %}
+      <div class="container pb-2">
+
+        <div class="navpills">
+          <a class="pill" href="{% url 'dashboard' %}"><i class="fa-solid fa-gauge-high"></i> Dashboard</a>
+          <a class="pill" href="{% url 'create_booking' %}"><i class="fa-solid fa-calendar-plus"></i> Book Resource</a>
+          <a class="pill" href="{% url 'my_bookings' %}"><i class="fa-solid fa-list-check"></i> My Bookings</a>
+
+          {% if user.is_staff or user.is_superuser or user.role == 'Faculty' %}
+            <a class="pill" href="{% url 'all_bookings' %}"><i class="fa-solid fa-table-list"></i> All Bookings</a>
+            <a class="pill" href="{% url 'add_resource' %}"><i class="fa-solid fa-computer"></i> Resources</a>
+            <a class="pill" href="{% url 'registration_requests_admin' %}"><i class="fa-solid fa-user-check"></i> Requests</a>
+            <a class="pill" href="{% url 'add_admin' %}"><i class="fa-solid fa-user-plus"></i> Add Admin</a>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="container py-4">
+
+    {# Django messages (nice alerts) #}
+    {% if messages %}
+      <div class="mb-3">
+        {% for message in messages %}
+          <div class="alert alert-{{ message.tags|default:'info' }} mb-2" role="alert">
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {% block content %}{% endblock %}
+
+    <div class="mt-4 text-center text-muted" style="font-size:.9rem;">
+      © {{ now|default:"MI Lab" }} • Resource Management
+    </div>
+
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  {% block extra_js %}{% endblock %}
+
+</body>
+</html>
+
