@@ -55,12 +55,27 @@ class BookingForm(forms.ModelForm):
         now = timezone.localtime().replace(second=0, microsecond=0)
         self.fields['start_time'].initial = now
 
-        # Restrict resource choices to only those that are operational (status OK).
-        # This prevents users from booking resources that are under maintenance or disabled.
+        # Restrict resource choices to only those that are operational (status OK) and
+        # not currently booked. A resource is considered unavailable if there is
+        # an active booking overlapping the present moment. We avoid presenting
+        # resources that are in use so users cannot double book them. This
+        # complements the overlap validation logic in `clean()`.
         try:
-            from .models import Resource
-            self.fields['resource'].queryset = Resource.objects.filter(status=Resource.Status.OK).order_by('name')
+            from .models import Resource, Booking
+            # Determine resources currently in use
+            current_time = timezone.now()
+            busy_ids = Booking.objects.filter(
+                is_active=True,
+                start_time__lte=current_time,
+                end_time__gte=current_time,
+            ).values_list('resource_id', flat=True)
+            self.fields['resource'].queryset = (
+                Resource.objects.filter(status=Resource.Status.OK)
+                .exclude(id__in=busy_ids)
+                .order_by('name')
+            )
         except Exception:
+            # Fallback: show all resources
             pass
 
     def clean(self):

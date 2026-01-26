@@ -70,9 +70,20 @@ def ra_dashboard(request):
         end_time__gte=now,
     ).values_list('resource_id', flat=True).distinct()
     available_resources = Resource.objects.exclude(id__in=busy_resources).filter(status=Resource.Status.OK).count()
-    # User's active and recent past bookings
-    my_active_bookings = Booking.objects.filter(user=request.user, is_active=True)
-    my_past_bookings = Booking.objects.filter(user=request.user, is_active=False).order_by('-created_at')[:5]
+    # User's currently active bookings: must be marked active and overlap now
+    now = timezone.now()
+    my_active_bookings = Booking.objects.filter(
+        user=request.user,
+        is_active=True,
+        start_time__lte=now,
+        end_time__gte=now,
+    )
+    # Past bookings include any bookings that are not currently running (either
+    # ended or released). We exclude bookings overlapping now. Limit to recent 5.
+    my_past_bookings = Booking.objects.filter(user=request.user).exclude(
+        start_time__lte=now,
+        end_time__gte=now,
+    ).order_by('-created_at')[:5]
 
     context: Dict[str, Any] = {
         'total_resources': total_resources,
@@ -136,8 +147,21 @@ def my_bookings(request):
     Display the current user's bookings. Active bookings come first.
     Users can release (end) an active booking from this page.
     """
-    active_bookings = Booking.objects.filter(user=request.user, is_active=True)
-    past_bookings = Booking.objects.filter(user=request.user, is_active=False)
+    now = timezone.now()
+    # Only treat bookings as active if their time window includes now and they
+    # are marked active. This avoids showing old bookings as active after
+    # their scheduled end time.
+    active_bookings = Booking.objects.filter(
+        user=request.user,
+        is_active=True,
+        start_time__lte=now,
+        end_time__gte=now,
+    )
+    # Past bookings include all bookings that are not currently running
+    past_bookings = Booking.objects.filter(user=request.user).exclude(
+        start_time__lte=now,
+        end_time__gte=now,
+    )
     return render(
         request,
         'labapp/my_bookings.html',
@@ -183,8 +207,14 @@ def faculty_dashboard(request):
     # Exclude superusers from counts
     total_ras = User.objects.filter(role=User.Role.RA, is_superuser=False).count()
     total_faculty = User.objects.filter(role=User.Role.FACULTY, is_superuser=False).count()
-    active_bookings_count = Booking.objects.filter(is_active=True).count()
+    # Define now once for the rest of this view
     now = timezone.now()
+    # Count only bookings that are active and whose time window includes now.
+    active_bookings_count = Booking.objects.filter(
+        is_active=True,
+        start_time__lte=now,
+        end_time__gte=now,
+    ).count()
     busy_resources = Booking.objects.filter(
         is_active=True,
         start_time__lte=now,
@@ -830,5 +860,11 @@ def active_bookings_admin(request):
     user: User = request.user  # type: ignore
     if not is_faculty_user(user):
         return redirect('ra_dashboard')
-    active_bookings = Booking.objects.filter(is_active=True).select_related('user', 'resource').order_by('-start_time')
+    now = timezone.now()
+    # Include only bookings that are currently in progress
+    active_bookings = Booking.objects.filter(
+        is_active=True,
+        start_time__lte=now,
+        end_time__gte=now,
+    ).select_related('user', 'resource').order_by('-start_time')
     return render(request, 'labapp/active_bookings_admin.html', {'bookings': active_bookings})

@@ -168,6 +168,19 @@ class Booking(models.Model):
         self.released_at = timezone.now()
         self.save(update_fields=["end_time", "is_active", "released_at"])
 
+    @property
+    def currently_active(self) -> bool:
+        """
+        Determine if this booking is currently in progress. A booking is
+        considered active only if it is marked as active and the current
+        time falls within its start and end window. This property does
+        not modify the stored `is_active` flag but provides a
+        real‑time check used by views and templates to hide bookings
+        whose scheduled end has passed.
+        """
+        now = timezone.now()
+        return self.is_active and self.start_time <= now <= self.end_time
+
 
 
 class RegistrationRequest(models.Model):
