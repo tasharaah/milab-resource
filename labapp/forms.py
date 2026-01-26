@@ -145,6 +145,10 @@ class ResourceForm(forms.ModelForm):
     class Meta:
         model = Resource
         fields = ['name', 'resource_type', 'computer_code', 'gpu', 'status', 'description']
+        labels = {
+            "computer_code": "Code",
+            "gpu": "GPU Specification",
+        }
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control'}),
             'resource_type': forms.Select(attrs={'class': 'form-select'}),
