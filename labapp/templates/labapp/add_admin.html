@@ -3,7 +3,7 @@
 {% block title %}Add User | MI Lab{% endblock %}
 
 {% block content %}
-<h1 class="mb-4">Add New User</h1>
+<h1 class="mb-4">Assign Admin Privileges</h1>
 <div class="row justify-content-center">
     <div class="col-md-8 col-lg-6">
         <div class="card shadow-sm">
@@ -12,31 +12,19 @@
                     {% csrf_token %}
                     {{ form.non_field_errors }}
                     <div class="mb-3">
-                        <label for="id_username" class="form-label">Username</label>
-                        {{ form.username }}
+                        <label for="id_user" class="form-label">Select User</label>
+                        {{ form.user }}
                     </div>
                     <div class="mb-3">
-                        <label for="id_role" class="form-label">Role</label>
-                        {{ form.role }}
-                    </div>
-                    <div class="mb-3">
-                        <label for="id_is_staff" class="form-label">Staff/Admin</label>
-                        {{ form.is_staff }}
-                    </div>
-                    <div class="mb-3">
-                        <label for="id_password1" class="form-label">Password</label>
-                        {{ form.password1 }}
-                    </div>
-                    <div class="mb-3">
-                        <label for="id_password2" class="form-label">Confirm Password</label>
-                        {{ form.password2 }}
+                        <label for="id_make_admin" class="form-label">Grant Admin Privileges</label>
+                        {{ form.make_admin }}
                     </div>
                     {% if form.errors %}
                         <div class="alert alert-danger">
                             {{ form.errors }}
                         </div>
                     {% endif %}
-                    <button type="submit" class="btn btn-primary">Create User</button>
+                    <button type="submit" class="btn btn-primary">Update</button>
                 </form>
             </div>
         </div>

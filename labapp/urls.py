@@ -26,6 +26,13 @@ urlpatterns = [
     path('registration-requests/<int:req_id>/reject/', views.reject_registration, name='reject_registration'),
     path('register-request/', views.register_request, name='register_request'),
 
+    # Additional admin/RA list and resource pages
+    path('users/ras/', views.list_ras, name='list_ras'),
+    path('users/faculty/', views.list_faculty, name='list_faculty'),
+    path('resources/all/', views.list_resources, name='list_resources'),
+    path('resources/available/', views.available_resources, name='available_resources'),
+    path('bookings/active/', views.active_bookings_admin, name='active_bookings_admin'),
+
     # Authentication
     path('login/', auth_views.LoginView.as_view(template_name='labapp/login.html'), name='login'),
     path('logout/', auth_views.LogoutView.as_view(next_page='login'), name='logout'),

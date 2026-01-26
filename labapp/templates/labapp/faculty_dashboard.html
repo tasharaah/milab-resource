@@ -16,59 +16,69 @@
 
 <div class="row">
     <div class="col-md-2 mb-3">
-        <div class="stat-card h-100">
-            <div class="stat-top">
-                <div class="stat-icon bg-primary"><i class="fa fa-layer-group"></i></div>
-                <div>
-                    <div class="stat-label">Total Resources</div>
-                    <div class="stat-value">{{ total_resources }}</div>
-                </div>
-            </div>
-        </div>
+        <a href="{% url 'list_resources' %}" class="text-decoration-none text-dark">
+          <div class="stat-card h-100">
+              <div class="stat-top">
+                  <div class="stat-icon bg-primary"><i class="fa fa-layer-group"></i></div>
+                  <div>
+                      <div class="stat-label">Total Resources</div>
+                      <div class="stat-value">{{ total_resources }}</div>
+                  </div>
+              </div>
+          </div>
+        </a>
     </div>
     <div class="col-md-2 mb-3">
-        <div class="stat-card h-100">
-            <div class="stat-top">
-                <div class="stat-icon bg-success"><i class="fa fa-check-circle"></i></div>
-                <div>
-                    <div class="stat-label">Available</div>
-                    <div class="stat-value">{{ available_resources }}</div>
-                </div>
-            </div>
-        </div>
+        <a href="{% url 'available_resources' %}" class="text-decoration-none text-dark">
+          <div class="stat-card h-100">
+              <div class="stat-top">
+                  <div class="stat-icon bg-success"><i class="fa fa-check-circle"></i></div>
+                  <div>
+                      <div class="stat-label">Available</div>
+                      <div class="stat-value">{{ available_resources }}</div>
+                  </div>
+              </div>
+          </div>
+        </a>
     </div>
     <div class="col-md-2 mb-3">
-        <div class="stat-card h-100">
-            <div class="stat-top">
-                <div class="stat-icon bg-warning"><i class="fa fa-clock"></i></div>
-                <div>
-                    <div class="stat-label">Active</div>
-                    <div class="stat-value">{{ active_bookings_count }}</div>
-                </div>
-            </div>
-        </div>
+        <a href="{% url 'active_bookings_admin' %}" class="text-decoration-none text-dark">
+          <div class="stat-card h-100">
+              <div class="stat-top">
+                  <div class="stat-icon bg-warning"><i class="fa fa-clock"></i></div>
+                  <div>
+                      <div class="stat-label">Active</div>
+                      <div class="stat-value">{{ active_bookings_count }}</div>
+                  </div>
+              </div>
+          </div>
+        </a>
     </div>
     <div class="col-md-2 mb-3">
-        <div class="stat-card h-100">
-            <div class="stat-top">
-                <div class="stat-icon bg-info"><i class="fa fa-user-graduate"></i></div>
-                <div>
-                    <div class="stat-label">Total RAs</div>
-                    <div class="stat-value">{{ total_ras }}</div>
-                </div>
-            </div>
-        </div>
+        <a href="{% url 'list_ras' %}" class="text-decoration-none text-dark">
+          <div class="stat-card h-100">
+              <div class="stat-top">
+                  <div class="stat-icon bg-info"><i class="fa fa-user-graduate"></i></div>
+                  <div>
+                      <div class="stat-label">Total RAs</div>
+                      <div class="stat-value">{{ total_ras }}</div>
+                  </div>
+              </div>
+          </div>
+        </a>
     </div>
     <div class="col-md-2 mb-3">
-        <div class="stat-card h-100">
-            <div class="stat-top">
-                <div class="stat-icon bg-secondary"><i class="fa fa-chalkboard-teacher"></i></div>
-                <div>
-                    <div class="stat-label">Total Faculty</div>
-                    <div class="stat-value">{{ total_faculty }}</div>
-                </div>
-            </div>
-        </div>
+        <a href="{% url 'list_faculty' %}" class="text-decoration-none text-dark">
+          <div class="stat-card h-100">
+              <div class="stat-top">
+                  <div class="stat-icon bg-secondary"><i class="fa fa-chalkboard-teacher"></i></div>
+                  <div>
+                      <div class="stat-label">Total Faculty</div>
+                      <div class="stat-value">{{ total_faculty }}</div>
+                  </div>
+              </div>
+          </div>
+        </a>
     </div>
 </div>
 

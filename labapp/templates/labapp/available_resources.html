@@ -1,0 +1,37 @@
+{% extends 'labapp/base.html' %}
+
+{% block title %}Available Resources | MI Lab{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Available Resources</h1>
+
+{% if resources %}
+<div class="table-responsive">
+  <table class="table table-striped align-middle">
+    <thead>
+      <tr>
+        <th scope="col">Name</th>
+        <th scope="col">Type</th>
+        <th scope="col">GPU</th>
+        <th scope="col">Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in resources %}
+      <tr>
+        <td>{{ r.name }}</td>
+        <td>{{ r.get_resource_type_display }}</td>
+        <td>{{ r.gpu|default:'—' }}</td>
+        <td>
+          <a href="{% url 'create_booking' %}?resource={{ r.id }}" class="btn btn-sm btn-primary">Book</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p>No available resources at this moment.</p>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends 'labapp/base.html' %}
+
+{% block title %}Active Bookings | MI Lab{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Active Bookings</h1>
+
+{% if bookings %}
+<div class="table-responsive">
+  <table class="table table-striped align-middle">
+    <thead>
+      <tr>
+        <th scope="col">User</th>
+        <th scope="col">Resource</th>
+        <th scope="col">GPU</th>
+        <th scope="col">Software</th>
+        <th scope="col">Start</th>
+        <th scope="col">End</th>
+        <th scope="col">Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for b in bookings %}
+      <tr>
+        <td>{{ b.user.username }}</td>
+        <td>{{ b.resource.name }}</td>
+        <td>{{ b.resource.gpu|default:'—' }}</td>
+        <td>{{ b.software|default:'—' }}</td>
+        <td>{{ b.start_time|date:'Y-m-d H:i' }}</td>
+        <td>{{ b.end_time|date:'Y-m-d H:i' }}</td>
+        <td>
+          <a href="{% url 'release_booking' b.id %}" class="btn btn-sm btn-danger" onclick="return confirm('End this booking?');">End</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p>No active bookings at the moment.</p>
+{% endif %}
+
+{% endblock %}

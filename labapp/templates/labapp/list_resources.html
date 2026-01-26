@@ -1,0 +1,39 @@
+{% extends 'labapp/base.html' %}
+
+{% block title %}All Resources | MI Lab{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">All Resources</h1>
+
+{% if resources %}
+<div class="table-responsive">
+  <table class="table table-striped align-middle">
+    <thead>
+      <tr>
+        <th scope="col">Name</th>
+        <th scope="col">Type</th>
+        <th scope="col">Code</th>
+        <th scope="col">GPU</th>
+        <th scope="col">Status</th>
+        <th scope="col">Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in resources %}
+      <tr>
+        <td>{{ r.name }}</td>
+        <td>{{ r.get_resource_type_display }}</td>
+        <td>{{ r.computer_code|default:'—' }}</td>
+        <td>{{ r.gpu|default:'—' }}</td>
+        <td>{{ r.get_status_display }}</td>
+        <td>{{ r.description|default:'—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p>No resources found.</p>
+{% endif %}
+
+{% endblock %}

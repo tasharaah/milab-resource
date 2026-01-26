@@ -7,37 +7,43 @@
 
 <div class="row">
     <div class="col-md-4 mb-3">
-        <div class="stat-card h-100">
-            <div class="stat-top">
-                <div class="stat-icon bg-primary"><i class="fa fa-desktop"></i></div>
-                <div>
-                    <div class="stat-label">Total Resources</div>
-                    <div class="stat-value">{{ total_resources }}</div>
-                </div>
-            </div>
-        </div>
+        <a href="{% url 'list_resources' %}" class="text-decoration-none text-dark">
+          <div class="stat-card h-100">
+              <div class="stat-top">
+                  <div class="stat-icon bg-primary"><i class="fa fa-desktop"></i></div>
+                  <div>
+                      <div class="stat-label">Total Resources</div>
+                      <div class="stat-value">{{ total_resources }}</div>
+                  </div>
+              </div>
+          </div>
+        </a>
     </div>
     <div class="col-md-4 mb-3">
-        <div class="stat-card h-100">
-            <div class="stat-top">
-                <div class="stat-icon bg-success"><i class="fa fa-check-circle"></i></div>
-                <div>
-                    <div class="stat-label">Available Resources</div>
-                    <div class="stat-value">{{ available_resources }}</div>
-                </div>
-            </div>
-        </div>
+        <a href="{% url 'available_resources' %}" class="text-decoration-none text-dark">
+          <div class="stat-card h-100">
+              <div class="stat-top">
+                  <div class="stat-icon bg-success"><i class="fa fa-check-circle"></i></div>
+                  <div>
+                      <div class="stat-label">Available Resources</div>
+                      <div class="stat-value">{{ available_resources }}</div>
+                  </div>
+              </div>
+          </div>
+        </a>
     </div>
     <div class="col-md-4 mb-3">
-        <div class="stat-card h-100">
-            <div class="stat-top">
-                <div class="stat-icon bg-warning"><i class="fa fa-clock"></i></div>
-                <div>
-                    <div class="stat-label">Active Bookings</div>
-                    <div class="stat-value">{{ my_active_bookings|length }}</div>
-                </div>
-            </div>
-        </div>
+        <a href="{% url 'my_bookings' %}" class="text-decoration-none text-dark">
+          <div class="stat-card h-100">
+              <div class="stat-top">
+                  <div class="stat-icon bg-warning"><i class="fa fa-clock"></i></div>
+                  <div>
+                      <div class="stat-label">Active Bookings</div>
+                      <div class="stat-value">{{ my_active_bookings|length }}</div>
+                  </div>
+              </div>
+          </div>
+        </a>
     </div>
 </div>
 

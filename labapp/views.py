@@ -27,7 +27,7 @@ from typing import Any, Dict
 import json
 
 from .models import Booking, Resource, RegistrationRequest
-from .forms import BookingForm, AddAdminForm, ResourceForm, RegistrationRequestForm
+from .forms import BookingForm, AddAdminForm, ResourceForm, RegistrationRequestForm, AssignAdminForm
 
 
 User = get_user_model()
@@ -102,12 +102,28 @@ def create_booking(request):
     access this page. Validation is handled in the form. Upon success
     the user is redirected to their bookings overview.
     """
-    form = BookingForm(request.POST or None)
-    if request.method == 'POST' and form.is_valid():
-        booking = form.save(commit=False)
-        booking.user = request.user  # type: ignore
-        booking.save()
-        return redirect('my_bookings')
+    # Preselect resource if passed via GET
+    initial = {}
+    resource_id = request.GET.get('resource')
+    if resource_id:
+        try:
+            resource_obj = Resource.objects.get(pk=resource_id)
+            initial['resource'] = resource_obj
+        except Resource.DoesNotExist:
+            pass
+    form = BookingForm(request.POST or None, initial=initial)
+    if request.method == 'POST':
+        if form.is_valid():
+            booking = form.save(commit=False)
+            booking.user = request.user  # type: ignore
+            booking.save()
+            messages.success(request, 'Booking created successfully.')
+            return redirect('my_bookings')
+        else:
+            # show validation errors using messages
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, error)
     return render(request, 'labapp/create_booking.html', {'form': form})
 
 @never_cache
@@ -156,8 +172,9 @@ def faculty_dashboard(request):
         return redirect('ra_dashboard')
 
     total_resources = Resource.objects.count()
-    total_ras = User.objects.filter(role=User.Role.RA).count()
-    total_faculty = User.objects.filter(role=User.Role.FACULTY).count()
+    # Exclude superusers from counts
+    total_ras = User.objects.filter(role=User.Role.RA, is_superuser=False).count()
+    total_faculty = User.objects.filter(role=User.Role.FACULTY, is_superuser=False).count()
     active_bookings_count = Booking.objects.filter(is_active=True).count()
     now = timezone.now()
     busy_resources = Booking.objects.filter(
@@ -224,13 +241,17 @@ def add_admin(request):
     user: User = request.user  # type: ignore
     if not is_faculty_user(user):
         return redirect('ra_dashboard')
-    form = AddAdminForm(request.POST or None)
+    # Instead of creating new users, allow assigning admin privileges to existing users
+    form = AssignAdminForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
-        new_user = form.save(commit=False)
-        new_user.role = form.cleaned_data['role']
-        new_user.is_staff = form.cleaned_data['is_staff']
-        new_user.save()
-        messages.success(request, f"User {new_user.username} created successfully")
+        selected_user: User = form.cleaned_data['user']  # type: ignore
+        grant = form.cleaned_data['make_admin']
+        selected_user.is_staff = grant
+        selected_user.save(update_fields=["is_staff"])
+        if grant:
+            messages.success(request, f"{selected_user.username} has been granted admin privileges.")
+        else:
+            messages.success(request, f"{selected_user.username}'s admin privileges have been revoked.")
         return redirect('faculty_dashboard')
     return render(request, 'labapp/add_admin.html', {'form': form})
 
@@ -357,3 +378,70 @@ def all_bookings(request):
         return redirect('ra_dashboard')
     bookings = Booking.objects.select_related('user', 'resource').order_by('-created_at')
     return render(request, 'labapp/all_bookings.html', {'bookings': bookings})
+
+# New list and resource views
+@never_cache
+@login_required
+def list_ras(request):
+    """
+    Display a list of all research assistants (excluding superusers) for administrators.
+    Only faculty, staff and superusers can access this page.
+    """
+    user: User = request.user  # type: ignore
+    if not is_faculty_user(user):
+        return redirect('ra_dashboard')
+    ras = User.objects.filter(role=User.Role.RA, is_superuser=False).order_by('username')
+    return render(request, 'labapp/list_ras.html', {'users': ras, 'title': 'Research Assistants'})
+
+
+@never_cache
+@login_required
+def list_faculty(request):
+    """
+    Display a list of all faculty (excluding superusers) for administrators.
+    """
+    user: User = request.user  # type: ignore
+    if not is_faculty_user(user):
+        return redirect('ra_dashboard')
+    faculty = User.objects.filter(role=User.Role.FACULTY, is_superuser=False).order_by('username')
+    return render(request, 'labapp/list_ras.html', {'users': faculty, 'title': 'Faculty Members'})
+
+
+@never_cache
+@login_required
+def list_resources(request):
+    """
+    Display a table of all resources. Accessible to any authenticated user.
+    """
+    resources = Resource.objects.all().order_by('name')
+    return render(request, 'labapp/list_resources.html', {'resources': resources})
+
+
+@never_cache
+@login_required
+def available_resources(request):
+    """
+    Display a list of currently available resources (status OK and not booked).
+    Users can navigate to the booking page from here. Accessible to any authenticated user.
+    """
+    now = timezone.now()
+    busy_ids = Booking.objects.filter(
+        is_active=True,
+        start_time__lte=now,
+        end_time__gte=now,
+    ).values_list('resource_id', flat=True).distinct()
+    available = Resource.objects.exclude(id__in=busy_ids).filter(status=Resource.Status.OK).order_by('name')
+    return render(request, 'labapp/available_resources.html', {'resources': available})
+
+
+@never_cache
+@login_required
+def active_bookings_admin(request):
+    """
+    Display a list of all active bookings. Only accessible to faculty or staff users.
+    """
+    user: User = request.user  # type: ignore
+    if not is_faculty_user(user):
+        return redirect('ra_dashboard')
+    active_bookings = Booking.objects.filter(is_active=True).select_related('user', 'resource').order_by('-start_time')
+    return render(request, 'labapp/active_bookings_admin.html', {'bookings': active_bookings})

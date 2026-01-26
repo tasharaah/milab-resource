@@ -1,0 +1,35 @@
+{% extends 'labapp/base.html' %}
+
+{% block title %}{{ title }} | MI Lab{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">{{ title }}</h1>
+
+{% if users %}
+<div class="table-responsive">
+  <table class="table table-striped align-middle">
+    <thead>
+      <tr>
+        <th scope="col">Username</th>
+        <th scope="col">Full Name</th>
+        <th scope="col">Email</th>
+        <th scope="col">Role</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in users %}
+      <tr>
+        <td>{{ u.username }}</td>
+        <td>{{ u.get_full_name|default:u.username }}</td>
+        <td>{{ u.email }}</td>
+        <td>{{ u.role }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p>No users found.</p>
+{% endif %}
+
+{% endblock %}

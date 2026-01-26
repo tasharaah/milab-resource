@@ -88,6 +88,21 @@ class AddAdminForm(UserCreationForm):
         fields = ('username', 'role', 'is_staff')
 
 
+# New form to assign admin privileges to existing users
+class AssignAdminForm(forms.Form):
+    """Form to grant or revoke admin status for existing users."""
+    user = forms.ModelChoiceField(
+        queryset=User.objects.filter(is_superuser=False),
+        label='User',
+        widget=forms.Select(attrs={'class': 'form-select'}),
+    )
+    make_admin = forms.BooleanField(
+        required=False,
+        initial=False,
+        label='Grant Admin Privileges',
+    )
+
+
 class ResourceForm(forms.ModelForm):
     """Form for creating or updating a lab resource. Only accessible to admins."""
 
@@ -127,6 +142,16 @@ class RegistrationRequestForm(forms.ModelForm):
         p2 = cleaned.get("password2")
         if p1 and p2 and p1 != p2:
             self.add_error("password2", "Passwords do not match.")
+        # Uniqueness checks for username and email
+        username = cleaned.get("username")
+        email = cleaned.get("email")
+        if username:
+            # Check against existing users and pending requests
+            if User.objects.filter(username=username).exists() or RegistrationRequest.objects.filter(username=username, status=RegistrationRequest.Status.PENDING).exists():
+                self.add_error("username", "A user with this username already exists. Please choose another.")
+        if email:
+            if User.objects.filter(email=email).exists() or RegistrationRequest.objects.filter(email=email, status=RegistrationRequest.Status.PENDING).exists():
+                self.add_error("email", "A user with this email already exists. Please choose another.")
         return cleaned
 
     def save(self, commit=True):
