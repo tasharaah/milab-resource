@@ -29,9 +29,6 @@
                 <td>{{ booking.start_time|date:'d M, Y h:i A' }}</td>
                 <td>{{ booking.end_time|date:'d M, Y h:i A' }}</td>
                 <td>
-                    {# Show status based on whether the booking is currently active.
-                       A booking is considered active only if it is marked active
-                       and its end time has not yet passed. #}
                     {% if booking.currently_active %}
                         <span class="badge bg-success">Active</span>
                     {% else %}
