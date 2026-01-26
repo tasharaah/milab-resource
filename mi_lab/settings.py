@@ -143,6 +143,11 @@ LOGIN_URL = "/login/"
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/login/"
 
+# Expire session when browser is closed. This ensures that users need to
+# authenticate again if they close the site and return later. Without this
+# setting Django will persist the session cookie for the default age (two weeks).
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
 # Email settings
 #
 # Configure SMTP settings via environment variables for password reset and
