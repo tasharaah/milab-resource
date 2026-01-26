@@ -83,140 +83,228 @@
 </div>
 
 <div class="row mt-4">
-    <div class="col-md-4 mb-4">
-        <h4>Top Resources</h4>
+    <div class="col-md-6 mb-4">
+        <h4>Resource Usage by RA</h4>
+        <form method="get" class="row g-2 mb-2">
+            <div class="col-sm-4">
+                <select name="pie_ra" class="form-select form-select-sm">
+                    <option value="all">All RAs</option>
+                    {% for ra in ra_list %}
+                        <option value="{{ ra.id }}" {% if ra.id|stringformat:'s' == pie_selected_ra|stringformat:'s' %}selected{% endif %}>{{ ra.get_full_name|default:ra.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-sm-3">
+                <input type="date" name="pie_start" value="{{ pie_start_date }}" class="form-control form-control-sm" />
+            </div>
+            <div class="col-sm-3">
+                <input type="date" name="pie_end" value="{{ pie_end_date }}" class="form-control form-control-sm" />
+            </div>
+            <div class="col-sm-2">
+                <select name="pie_period" class="form-select form-select-sm">
+                    <option value="">Custom</option>
+                    <option value="last_week">Last Week</option>
+                    <option value="last_month">Last Month</option>
+                    <option value="last_3_months">Last 3 Months</option>
+                    <option value="last_year">Last Year</option>
+                    <option value="all">All Time</option>
+                </select>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-sm btn-primary">Apply</button>
+            </div>
+        </form>
         <div class="chart-container">
-            <canvas id="resourceChart"></canvas>
+            <canvas id="pieChart"></canvas>
         </div>
     </div>
-    <div class="col-md-4 mb-4">
-        <h4>Top Users</h4>
+    <div class="col-md-6 mb-4">
+        <h4>Resource Usage Duration (hrs)</h4>
+        <form method="get" class="row g-2 mb-2">
+            <div class="col-sm-4">
+                <select name="res_ra" class="form-select form-select-sm">
+                    <option value="all">All RAs</option>
+                    {% for ra in ra_list %}
+                        <option value="{{ ra.id }}" {% if ra.id|stringformat:'s' == res_selected_ra|stringformat:'s' %}selected{% endif %}>{{ ra.get_full_name|default:ra.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-sm-3">
+                <input type="date" name="res_start" value="{{ res_start_date }}" class="form-control form-control-sm" />
+            </div>
+            <div class="col-sm-3">
+                <input type="date" name="res_end" value="{{ res_end_date }}" class="form-control form-control-sm" />
+            </div>
+            <div class="col-sm-2">
+                <select name="res_period" class="form-select form-select-sm">
+                    <option value="">Custom</option>
+                    <option value="last_week">Last Week</option>
+                    <option value="last_month">Last Month</option>
+                    <option value="last_3_months">Last 3 Months</option>
+                    <option value="last_year">Last Year</option>
+                    <option value="all">All Time</option>
+                </select>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-sm btn-primary">Apply</button>
+            </div>
+        </form>
         <div class="chart-container">
-            <canvas id="userChart"></canvas>
-        </div>
-    </div>
-    <div class="col-md-4 mb-4">
-        <h4>Top Software</h4>
-        <div class="chart-container">
-            <canvas id="softwareChart"></canvas>
+            <canvas id="resourceDurationChart"></canvas>
         </div>
     </div>
 </div>
 
 <div class="row mt-4">
-    <div class="col-12">
-        <h4>Active Bookings</h4>
-        {% if active_bookings %}
-        <div class="table-responsive">
-            <table class="table table-striped align-middle">
-                <thead>
-                    <tr>
-                        <th scope="col">User</th>
-                        <th scope="col">Resource</th>
-                        <th scope="col">GPU</th>
-                        <th scope="col">Software</th>
-                        <th scope="col">Start</th>
-                        <th scope="col">End</th>
-                        <th scope="col">Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for booking in active_bookings %}
-                    <tr>
-                        <td>{{ booking.user.username }}</td>
-                        <td>{{ booking.resource.name }}</td>
-                        <td>{{ booking.resource.gpu }}</td>
-                        <td>{{ booking.software|default:'—' }}</td>
-                        <td>{{ booking.start_time|date:'Y-m-d H:i' }}</td>
-                        <td>{{ booking.end_time|date:'Y-m-d H:i' }}</td>
-                        <td>
-                            <a href="{% url 'release_booking' booking.id %}" class="btn btn-sm btn-danger" onclick="return confirm('Mark this booking as completed?');">End</a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    <div class="col-md-6 mb-4">
+        <h4>Top Users by Time (hrs)</h4>
+        <form method="get" class="row g-2 mb-2">
+            <div class="col-sm-4">
+                <input type="date" name="user_start" value="{{ user_start_date }}" class="form-control form-control-sm" />
+            </div>
+            <div class="col-sm-4">
+                <input type="date" name="user_end" value="{{ user_end_date }}" class="form-control form-control-sm" />
+            </div>
+            <div class="col-sm-3">
+                <select name="user_period" class="form-select form-select-sm">
+                    <option value="">Custom</option>
+                    <option value="last_week">Last Week</option>
+                    <option value="last_month">Last Month</option>
+                    <option value="last_3_months">Last 3 Months</option>
+                    <option value="last_year">Last Year</option>
+                    <option value="all">All Time</option>
+                </select>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-sm btn-primary">Apply</button>
+            </div>
+        </form>
+        <div class="chart-container">
+            <canvas id="topUsersChart"></canvas>
         </div>
-        {% else %}
-        <p>No active bookings at the moment.</p>
-        {% endif %}
+    </div>
+    <div class="col-md-6 mb-4">
+        <h4>Most Active Time (Bookings)</h4>
+        <form method="get" class="row g-2 mb-2">
+            <div class="col-sm-3">
+                <select name="time_resource" class="form-select form-select-sm">
+                    <option value="all" {% if time_selected_resource == 'all' %}selected{% endif %}>All Resources</option>
+                    {% for res in resource_list %}
+                        <option value="{{ res.id }}" {% if res.id|stringformat:'s' == time_selected_resource|stringformat:'s' %}selected{% endif %}>{{ res.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-sm-3">
+                <input type="date" name="time_start" value="{{ time_start_date }}" class="form-control form-control-sm" />
+            </div>
+            <div class="col-sm-3">
+                <input type="date" name="time_end" value="{{ time_end_date }}" class="form-control form-control-sm" />
+            </div>
+            <div class="col-sm-3">
+                <select name="time_period" class="form-select form-select-sm">
+                    <option value="">Custom</option>
+                    <option value="last_week">Last Week</option>
+                    <option value="last_month">Last Month</option>
+                    <option value="last_3_months">Last 3 Months</option>
+                    <option value="last_year">Last Year</option>
+                    <option value="all">All Time</option>
+                </select>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-sm btn-primary">Apply</button>
+            </div>
+        </form>
+        <div class="chart-container">
+            <canvas id="hourChart"></canvas>
+        </div>
     </div>
 </div>
 
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.2.1/dist/chart.umd.min.js"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        // Extract data passed from the view
-        const resourceLabels = {{ resource_labels_json|safe }};
-        const resourceCounts = {{ resource_counts_json|safe }};
-        const userLabels = {{ user_labels_json|safe }};
-        const userCounts = {{ user_counts_json|safe }};
-        const softwareLabels = {{ software_labels_json|safe }};
-        const softwareCounts = {{ software_counts_json|safe }};
+document.addEventListener('DOMContentLoaded', () => {
+  // Pie chart
+  const pieLabels = {{ pie_labels_json|safe }};
+  const pieValues = {{ pie_values_json|safe }};
+  new Chart(document.getElementById('pieChart').getContext('2d'), {
+    type: 'pie',
+    data: {
+      labels: pieLabels,
+      datasets: [{
+        data: pieValues,
+        backgroundColor: pieLabels.map(() => `hsl(${Math.random()*360}, 70%, 60%)`),
+      }],
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom' } } },
+  });
 
-        const resourceData = {
-            labels: resourceLabels,
-            datasets: [{
-                label: 'Bookings',
-                data: resourceCounts,
-            }]
-        };
-        const userData = {
-            labels: userLabels,
-            datasets: [{
-                label: 'Bookings',
-                data: userCounts,
-            }]
-        };
-        const softwareData = {
-            labels: softwareLabels,
-            datasets: [{
-                label: 'Bookings',
-                data: softwareCounts,
-            }]
-        };
+  // Resource durations bar chart
+  const resLabels = {{ resource_labels_json|safe }};
+  const resDurations = {{ resource_durations_json|safe }};
+  new Chart(document.getElementById('resourceDurationChart').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: resLabels,
+      datasets: [{
+        label: 'Hours',
+        data: resDurations,
+        backgroundColor: 'rgba(54, 162, 235, 0.7)',
+      }],
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, title: { display: true, text: 'Hours' } } },
+    },
+  });
 
-        // Create charts using Chart.js
-        const rcCtx = document.getElementById('resourceChart').getContext('2d');
-        new Chart(rcCtx, {
-            type: 'bar',
-            data: resourceData,
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { display: false },
-                    title: { display: false },
-                }
-            }
-        });
+  // Top users bar chart
+  const userLabels = {{ user_labels_json|safe }};
+  const userDurations = {{ user_durations_json|safe }};
+  new Chart(document.getElementById('topUsersChart').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: userLabels,
+      datasets: [{
+        label: 'Hours',
+        data: userDurations,
+        backgroundColor: 'rgba(255, 99, 132, 0.7)',
+      }],
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, title: { display: true, text: 'Hours' } } },
+    },
+  });
 
-        const ucCtx = document.getElementById('userChart').getContext('2d');
-        new Chart(ucCtx, {
-            type: 'bar',
-            data: userData,
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { display: false },
-                    title: { display: false },
-                }
-            }
-        });
-
-        const scCtx = document.getElementById('softwareChart').getContext('2d');
-        new Chart(scCtx, {
-            type: 'bar',
-            data: softwareData,
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { display: false },
-                    title: { display: false },
-                }
-            }
-        });
-    });
+  // Hour distribution line chart
+  const hourLabels = {{ hour_labels_json|safe }};
+  const hourCounts = {{ hour_counts_json|safe }};
+  new Chart(document.getElementById('hourChart').getContext('2d'), {
+    type: 'line',
+    data: {
+      labels: hourLabels,
+      datasets: [{
+        label: 'Bookings',
+        data: hourCounts,
+        fill: false,
+        borderColor: 'rgba(75, 192, 192, 0.8)',
+        tension: 0.3,
+      }],
+    },
+    options: {
+      responsive: true,
+      scales: {
+        x: { title: { display: true, text: 'Hour of Day' } },
+        y: { beginAtZero: true, title: { display: true, text: 'Count' } },
+      },
+      plugins: { legend: { display: false } },
+    },
+  });
+});
 </script>
 {% endblock %}

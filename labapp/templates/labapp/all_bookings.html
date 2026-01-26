@@ -26,8 +26,8 @@
                 <td>{{ booking.user.username }}</td>
                 <td>{{ booking.resource.name }}</td>
                 <td>{{ booking.software|default:'—' }}</td>
-                <td>{{ booking.start_time|date:'Y-m-d H:i' }}</td>
-                <td>{{ booking.end_time|date:'Y-m-d H:i' }}</td>
+                <td>{{ booking.start_time|date:'d M, Y h:i A' }}</td>
+                <td>{{ booking.end_time|date:'d M, Y h:i A' }}</td>
                 <td>
                     {% if booking.is_active %}
                         <span class="badge bg-success">Active</span>
@@ -36,7 +36,7 @@
                     {% endif %}
                 </td>
                 <td>{{ booking.description|default:'—' }}</td>
-                <td>{{ booking.released_at|date:'Y-m-d H:i'|default:'—' }}</td>
+                <td>{{ booking.released_at|date:'d M, Y h:i A'|default:'—' }}</td>
             </tr>
             {% endfor %}
         </tbody>

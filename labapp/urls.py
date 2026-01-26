@@ -33,6 +33,15 @@ urlpatterns = [
     path('resources/available/', views.available_resources, name='available_resources'),
     path('bookings/active/', views.active_bookings_admin, name='active_bookings_admin'),
 
+    # Resource and user management actions
+    path('resources/<int:resource_id>/delete/', views.delete_resource, name='delete_resource'),
+    path('resources/<int:resource_id>/update/', views.update_resource, name='update_resource'),
+    path('users/ras/delete/<int:user_id>/', views.delete_ra, name='delete_ra'),
+    # Active resources view accessible to all authenticated users
+    path('resources/active/', views.active_resources, name='active_resources'),
+    # Statistics dashboard for admins
+    path('stats/', views.stats, name='stats'),
+
     # Authentication
     path('login/', auth_views.LoginView.as_view(template_name='labapp/login.html'), name='login'),
     path('logout/', auth_views.LogoutView.as_view(next_page='login'), name='logout'),

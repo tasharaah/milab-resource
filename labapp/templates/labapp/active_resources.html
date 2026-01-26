@@ -1,9 +1,9 @@
 {% extends 'labapp/base.html' %}
 
-{% block title %}Active Bookings | MI Lab{% endblock %}
+{% block title %}Active Resources | MI Lab{% endblock %}
 
 {% block content %}
-<h1 class="mb-4">Active Bookings</h1>
+<h1 class="mb-4">Active Resources</h1>
 
 {% if bookings %}
 <div class="table-responsive">
@@ -16,7 +16,10 @@
         <th scope="col">Software</th>
         <th scope="col">Start</th>
         <th scope="col">End</th>
+        {# Show an actions column for admins to end bookings #}
+        {% if user.is_staff or user.is_superuser or user.role == 'Faculty' %}
         <th scope="col">Action</th>
+        {% endif %}
       </tr>
     </thead>
     <tbody>
@@ -28,9 +31,11 @@
         <td>{{ b.software|default:'—' }}</td>
         <td>{{ b.start_time|date:'d M, Y h:i A' }}</td>
         <td>{{ b.end_time|date:'d M, Y h:i A' }}</td>
+        {% if user.is_staff or user.is_superuser or user.role == 'Faculty' %}
         <td>
-          <a href="{% url 'release_booking' b.id %}" class="btn btn-sm btn-danger" onclick="return confirm('End this booking?');">End</a>
+          <a href="{% url 'release_booking' b.id %}?next=active_resources" class="btn btn-sm btn-danger" onclick="return confirm('End this booking?');">End</a>
         </td>
+        {% endif %}
       </tr>
       {% endfor %}
     </tbody>

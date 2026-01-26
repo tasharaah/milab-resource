@@ -172,6 +172,10 @@
           <a class="pill" href="{% url 'create_booking' %}"><i class="fa-solid fa-calendar-plus"></i> Book Resource</a>
           <a class="pill" href="{% url 'my_bookings' %}"><i class="fa-solid fa-list-check"></i> My Bookings</a>
 
+          {# Resource availability and active resources accessible to all users #}
+          <a class="pill" href="{% url 'available_resources' %}"><i class="fa-solid fa-check-circle"></i> Available</a>
+          <a class="pill" href="{% url 'active_resources' %}"><i class="fa-solid fa-clock"></i> Active</a>
+
           {% if user.is_staff or user.is_superuser or user.role == 'Faculty' %}
             <a class="pill" href="{% url 'all_bookings' %}"><i class="fa-solid fa-table-list"></i> All Bookings</a>
             <a class="pill" href="{% url 'add_resource' %}"><i class="fa-solid fa-computer"></i> Resources</a>

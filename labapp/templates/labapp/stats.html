@@ -1,0 +1,204 @@
+{% extends 'labapp/base.html' %}
+
+{% block title %}Statistics | MI Lab{% endblock %}
+
+{% block extra_head %}
+<style>
+  .chart-container {
+    position: relative;
+    height: 320px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Statistics</h1>
+
+<form method="get" class="row g-3 mb-4">
+  <div class="col-md-3">
+    <label class="form-label">Research Assistant</label>
+    <select name="ra" class="form-select">
+      <option value="all" {% if selected_ra == 'all' %}selected{% endif %}>All</option>
+      {% for ra in ra_list %}
+        <option value="{{ ra.id }}" {% if ra.id|stringformat:'s' == selected_ra|stringformat:'s' %}selected{% endif %}>{{ ra.get_full_name|default:ra.username }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">Resource</label>
+    <select name="resource" class="form-select">
+      <option value="all" {% if selected_resource == 'all' %}selected{% endif %}>All</option>
+      {% for res in resource_list %}
+        <option value="{{ res.id }}" {% if res.id|stringformat:'s' == selected_resource|stringformat:'s' %}selected{% endif %}>{{ res.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-2">
+    <label class="form-label">Start Date</label>
+    <input type="date" name="start" value="{{ start_date }}" class="form-control">
+  </div>
+  <div class="col-md-2">
+    <label class="form-label">End Date</label>
+    <input type="date" name="end" value="{{ end_date }}" class="form-control">
+  </div>
+  <div class="col-md-2">
+    <label class="form-label">Quick Range</label>
+    <select name="period" class="form-select">
+      <option value="">Custom</option>
+      <option value="last_week">Last Week</option>
+      <option value="last_month">Last Month</option>
+      <option value="last_3_months">Last 3 Months</option>
+      <option value="last_year">Last Year</option>
+      <option value="all">All Time</option>
+    </select>
+  </div>
+  <div class="col-md-12 col-lg-2 align-self-end">
+    <button type="submit" class="btn btn-primary w-100">Apply</button>
+  </div>
+</form>
+
+<div class="row">
+  <div class="col-md-6 mb-4">
+    <h4>Resource Usage Distribution</h4>
+    <div class="chart-container">
+      <canvas id="pieChart"></canvas>
+    </div>
+  </div>
+  <div class="col-md-6 mb-4">
+    <h4>Resource Usage Duration (hrs)</h4>
+    <div class="chart-container">
+      <canvas id="resourceDurationChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-6 mb-4">
+    <h4>Top Users by Time (hrs)</h4>
+    <div class="chart-container">
+      <canvas id="topUsersChart"></canvas>
+    </div>
+  </div>
+  <div class="col-md-6 mb-4">
+    <h4>Booking Start Times</h4>
+    <div class="chart-container">
+      <canvas id="hourChart"></canvas>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.2.1/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const pieLabels = {{ pie_labels_json|safe }};
+  const pieData = {{ pie_values_json|safe }};
+  const resLabels = {{ resource_labels_json|safe }};
+  const resDurations = {{ resource_durations_json|safe }};
+  const userLabels = {{ user_labels_json|safe }};
+  const userDurations = {{ user_durations_json|safe }};
+  const hourLabels = {{ hour_labels_json|safe }};
+  const hourCounts = {{ hour_counts_json|safe }};
+
+  // Pie chart
+  new Chart(document.getElementById('pieChart').getContext('2d'), {
+    type: 'pie',
+    data: {
+      labels: pieLabels,
+      datasets: [{
+        data: pieData,
+        backgroundColor: pieLabels.map(() => `hsl(${Math.random()*360}, 70%, 60%)`),
+      }],
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'bottom' },
+      },
+    },
+  });
+
+  // Resource durations bar chart
+  new Chart(document.getElementById('resourceDurationChart').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: resLabels,
+      datasets: [{
+        label: 'Hours',
+        data: resDurations,
+        backgroundColor: 'rgba(54, 162, 235, 0.7)',
+      }],
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: { display: true, text: 'Hours' },
+        },
+      },
+    },
+  });
+
+  // Top users bar chart
+  new Chart(document.getElementById('topUsersChart').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: userLabels,
+      datasets: [{
+        label: 'Hours',
+        data: userDurations,
+        backgroundColor: 'rgba(255, 99, 132, 0.7)',
+      }],
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: { display: true, text: 'Hours' },
+        },
+      },
+    },
+  });
+
+  // Hour distribution line chart
+  new Chart(document.getElementById('hourChart').getContext('2d'), {
+    type: 'line',
+    data: {
+      labels: hourLabels,
+      datasets: [{
+        label: 'Bookings',
+        data: hourCounts,
+        fill: false,
+        borderColor: 'rgba(75, 192, 192, 0.8)',
+        tension: 0.3,
+      }],
+    },
+    options: {
+      responsive: true,
+      scales: {
+        x: {
+          title: { display: true, text: 'Hour of Day' },
+        },
+        y: {
+          beginAtZero: true,
+          title: { display: true, text: 'Count' },
+        },
+      },
+      plugins: {
+        legend: { display: false },
+      },
+    },
+  });
+});
+</script>
+{% endblock %}

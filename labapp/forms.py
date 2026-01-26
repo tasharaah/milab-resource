@@ -20,11 +20,19 @@ User = get_user_model()
 
 
 class BookingForm(forms.ModelForm):
-    """Form for creating a new booking. Includes start/end times and software."""
+    """
+    Form for creating a new booking. The booking always starts
+    immediately, so the start time field is hidden and automatically
+    populated. Users only need to select the resource, end time,
+    software and an optional description.
+    """
 
+    # Hide start_time and prepopulate it with the current local time. The
+    # field is not required because we will set it in the view when
+    # saving the booking.
     start_time = forms.DateTimeField(
-        widget=forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
-        label='Start Time',
+        required=False,
+        widget=forms.HiddenInput(),
     )
     end_time = forms.DateTimeField(
         widget=forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
@@ -33,35 +41,48 @@ class BookingForm(forms.ModelForm):
 
     class Meta:
         model = Booking
-        fields = ['resource', 'start_time', 'end_time', 'software', 'description']
+        # We intentionally exclude start_time from the form fields list
+        fields = ['resource', 'end_time', 'software', 'description']
         widgets = {
             'resource': forms.Select(attrs={'class': 'form-select'}),
             'software': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Software/Tool'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Prepopulate start_time with current local time to assist hidden field
+        now = timezone.localtime().replace(second=0, microsecond=0)
+        self.fields['start_time'].initial = now
+
+        # Restrict resource choices to only those that are operational (status OK).
+        # This prevents users from booking resources that are under maintenance or disabled.
+        try:
+            from .models import Resource
+            self.fields['resource'].queryset = Resource.objects.filter(status=Resource.Status.OK).order_by('name')
+        except Exception:
+            pass
+
     def clean(self):
         """
-        Validate the booking form. Ensures start time is before end time,
-        start time is not in the past and there are no overlapping active
-        bookings for the chosen resource. Overlap checks rely on the
-        resource's related bookings and should be efficient for small
-        numbers of concurrent bookings.
+        Validate the booking form. Ensures end time is after the
+        current time and there are no overlapping active bookings for
+        the chosen resource. The start time is not editable by the
+        user and is set to the current time when the booking is saved.
         """
         cleaned_data = super().clean()
-        start = cleaned_data.get('start_time')
         end = cleaned_data.get('end_time')
         resource = cleaned_data.get('resource')
-        if start and end and start >= end:
-            raise forms.ValidationError('End time must be after start time.')
-        if start and start < timezone.now():
-            raise forms.ValidationError('Start time cannot be in the past.')
-        # Check overlapping bookings
-        if resource and start and end:
+        now = timezone.now()
+        # End time must be in the future relative to now
+        if end and end <= now:
+            raise forms.ValidationError('End time must be in the future.')
+        # Check overlapping bookings (from now to end)
+        if resource and end:
             overlapping = resource.bookings.filter(
                 is_active=True,
                 start_time__lt=end,
-                end_time__gt=start,
+                end_time__gt=now,
             )
             if overlapping.exists():
                 raise forms.ValidationError('This resource is already booked for the selected time range.')

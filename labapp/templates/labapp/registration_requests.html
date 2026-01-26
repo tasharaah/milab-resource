@@ -22,7 +22,7 @@
                 <td>{{ req.username }}</td>
                 <td>{{ req.email }}</td>
                 <td>{{ req.first_name }} {{ req.last_name }}</td>
-                <td>{{ req.created_at|date:'Y-m-d H:i' }}</td>
+                <td>{{ req.created_at|date:'d M, Y h:i A' }}</td>
                 <td>
                     <a href="{% url 'approve_registration' req.id %}" class="btn btn-sm btn-success me-2" onclick="return confirm('Approve this registration request?');">Approve</a>
                     <a href="{% url 'reject_registration' req.id %}" class="btn btn-sm btn-danger" onclick="return confirm('Reject this registration request?');">Reject</a>

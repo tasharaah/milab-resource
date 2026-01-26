@@ -31,3 +31,23 @@
     </div>
 </div>
 {% endblock %}
+
+{% block extra_js %}
+<script>
+// Automatically check or uncheck the admin checkbox based on the selected user.
+document.addEventListener('DOMContentLoaded', function() {
+  const adminStatus = {{ admin_statuses_json|safe }};
+  const userSelect = document.getElementById('id_user');
+  const adminCheckbox = document.getElementById('id_make_admin');
+  function updateCheckbox() {
+    const uid = userSelect.value;
+    adminCheckbox.checked = adminStatus[uid] === true;
+  }
+  if (userSelect && adminCheckbox) {
+    userSelect.addEventListener('change', updateCheckbox);
+    // Initialise on page load
+    updateCheckbox();
+  }
+});
+</script>
+{% endblock %}
