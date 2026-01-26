@@ -11,6 +11,9 @@ from __future__ import annotations
 
 from django.core.mail import send_mail
 from django.conf import settings
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
 
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.cache import never_cache
@@ -257,53 +260,54 @@ def registration_requests_admin(request):
     pending = RegistrationRequest.objects.filter(status=RegistrationRequest.Status.PENDING).order_by('-created_at')
     return render(request, 'labapp/registration_requests.html', {'pending_requests': pending})
 
+
 @never_cache
 @login_required
 def approve_registration(request, req_id: int):
-    """
-    Approve a pending registration request. Creates a new user with RA role
-    and marks the request as approved. The user is created with an
-    unusable password; they must reset their password via the 'forgot
-    password' flow. Only faculty or staff can approve requests.
-    """
     user: User = request.user  # type: ignore
     if not is_faculty_user(user):
-        return redirect('ra_dashboard')
-    reg_req = get_object_or_404(RegistrationRequest, pk=req_id, status=RegistrationRequest.Status.PENDING)
-    # Create the new user
-    new_user = User.objects.create(
-    username=reg_req.username,
-    email=reg_req.email,
-    first_name=reg_req.first_name,
-    last_name=reg_req.last_name,
-    role=User.Role.RA,
-    is_active=True,
-)
+        return redirect("ra_dashboard")
 
-    # set hashed password from request
-    new_user.password = reg_req.password_hash
+    reg_req = get_object_or_404(
+        RegistrationRequest,
+        pk=req_id,
+        status=RegistrationRequest.Status.PENDING
+    )
+
+    new_user = User.objects.create_user(
+        username=reg_req.username,
+        email=reg_req.email,
+        first_name=reg_req.first_name,
+        last_name=reg_req.last_name,
+        role=User.Role.RA,
+        password=None,
+    )
+    new_user.password = reg_req.password_hash  # stored Django hash
+    new_user.is_active = True
     new_user.save()
-    send_mail(
-    subject="MI Lab | Your account has been approved",
-    message=(
-        f"Hi {new_user.first_name or new_user.username},\n\n"
-        "Your MI Lab account has been approved.\n"
-        "You can now log in.\n\n"
-        "If you forgot your password, use the 'Forgot password' option on the login page.\n\n"
-        "— MI Lab"
-    ),
-    from_email=settings.DEFAULT_FROM_EMAIL,
-    recipient_list=[new_user.email],
-    fail_silently=False,
-)
 
+    try:
+        send_mail(
+            subject="MI Lab | Your account has been approved",
+            message=(
+                f"Hi {new_user.first_name or new_user.username},\n\n"
+                "Your MI Lab account has been approved.\n"
+                "You can now log in.\n\n"
+                "— MI Lab"
+            ),
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[new_user.email],
+            fail_silently=False,
+        )
+    except Exception as e:
+        messages.warning(request, f"Approved, but approval email failed: {e}")
 
-    # Update request status
     reg_req.status = RegistrationRequest.Status.APPROVED
     reg_req.reviewed_at = timezone.now()
-    reg_req.save(update_fields=['status', 'reviewed_at'])
+    reg_req.save(update_fields=["status", "reviewed_at"])
+
     messages.success(request, f"Registration request for {new_user.username} approved.")
-    return redirect('registration_requests_admin')
+    return redirect("registration_requests_admin")
 
 @never_cache
 @login_required
