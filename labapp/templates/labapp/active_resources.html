@@ -33,9 +33,6 @@
         <td>{{ b.end_time|date:'d M, Y h:i A' }}</td>
         {% if user.is_staff or user.is_superuser or user.role == 'Faculty' %}
         <td>
-          {# Provide an end button for admins to terminate the booking. The
-             `next` query parameter ensures the user is returned to
-             this page after ending the booking. #}
           <a href="{% url 'release_booking' b.id %}?next=active_resources" class="btn btn-sm btn-danger" onclick="return confirm('End this booking?');">End</a>
         </td>
         {% endif %}
