@@ -25,9 +25,20 @@
                         {{ form.software }}
                     </div>
                     <div class="mb-3">
+                        <label for="id_project_name" class="form-label">Project Name (optional)</label>
+                        {{ form.project_name }}
+                    </div>
+                    <div class="mb-3">
                         <label for="id_description" class="form-label">Description (optional)</label>
                         {{ form.description }}
                     </div>
+                    {% if user.is_staff or user.is_superuser or user.role == 'Faculty' %}
+                    <div class="mb-3">
+                        <label for="id_assignee" class="form-label">Assign To (optional)</label>
+                        {{ form.assignee }}
+                        <small class="form-text text-muted">Choose a user to assign this booking to.</small>
+                    </div>
+                    {% endif %}
                     {% if form.errors %}
                         <div class="alert alert-danger">
                             {{ form.errors }}

@@ -1,0 +1,65 @@
+{% extends 'labapp/base.html' %}
+
+{% block title %}Print Usage Stats | MI Lab{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Print Usage Statistics</h1>
+
+<p class="text-muted">Select a user and date range to generate a printable PDF summarising booking durations. If no user is selected, the report will include all research assistants, students and interns.</p>
+
+<form method="post" class="row g-3 mb-4">
+  {% csrf_token %}
+  <div class="col-md-4">
+    <label class="form-label">User</label>
+    <select name="ra" class="form-select">
+      <option value="all" {% if selected_ra == 'all' %}selected{% endif %}>All Users</option>
+      {% for u in ra_list %}
+        <option value="{{ u.id }}" {% if u.id|stringformat:'s' == selected_ra|stringformat:'s' %}selected{% endif %}>{{ u.get_full_name|default:u.username }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <!-- Custom date range fields -->
+  <div id="print-range-start" class="col-md-3">
+    <label class="form-label">Start Date</label>
+    <input type="date" name="start" value="{{ start_date }}" class="form-control">
+  </div>
+  <div id="print-range-end" class="col-md-3">
+    <label class="form-label">End Date</label>
+    <input type="date" name="end" value="{{ end_date }}" class="form-control">
+  </div>
+  <div class="col-md-2">
+    <label class="form-label">Quick Range</label>
+    <select id="printPeriodSelect" name="period" class="form-select">
+      <option value="" {% if selected_period == '' %}selected{% endif %}>Custom</option>
+      <option value="last_week" {% if selected_period == 'last_week' %}selected{% endif %}>Last Week</option>
+      <option value="last_month" {% if selected_period == 'last_month' %}selected{% endif %}>Last Month</option>
+      <option value="last_3_months" {% if selected_period == 'last_3_months' %}selected{% endif %}>Last 3 Months</option>
+      <option value="last_year" {% if selected_period == 'last_year' %}selected{% endif %}>Last Year</option>
+      <option value="all" {% if selected_period == 'all' %}selected{% endif %}>All Time</option>
+    </select>
+  </div>
+  <div class="col-12">
+    <button type="submit" class="btn btn-primary">Generate PDF</button>
+  </div>
+</form>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Hide or show custom date inputs based on quick range selection
+  function togglePrintDateFields() {
+    const selectEl = document.getElementById('printPeriodSelect');
+    const showCustom = selectEl.value === '';
+    const startDiv = document.getElementById('print-range-start');
+    const endDiv = document.getElementById('print-range-end');
+    if (startDiv) startDiv.style.display = showCustom ? '' : 'none';
+    if (endDiv) endDiv.style.display = showCustom ? '' : 'none';
+  }
+  const periodEl = document.getElementById('printPeriodSelect');
+  periodEl.addEventListener('change', togglePrintDateFields);
+  togglePrintDateFields();
+});
+</script>
+{% endblock %}

@@ -12,8 +12,7 @@
       <tr>
         <th scope="col">User</th>
         <th scope="col">Resource</th>
-        <th scope="col">GPU</th>
-        <th scope="col">Software</th>
+        <th scope="col">Description</th>
         <th scope="col">Start</th>
         <th scope="col">End</th>
         <th scope="col">Action</th>
@@ -24,8 +23,7 @@
       <tr>
         <td>{{ b.user.username }}</td>
         <td>{{ b.resource.name }}</td>
-        <td>{{ b.resource.gpu|default:'—' }}</td>
-        <td>{{ b.software|default:'—' }}</td>
+        <td>{{ b.description|default:'—' }}</td>
         <td>{{ b.start_time|date:'d M, Y h:i A' }}</td>
         <td>{{ b.end_time|date:'d M, Y h:i A' }}</td>
         <td>

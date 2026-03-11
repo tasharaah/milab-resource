@@ -1,0 +1,36 @@
+{% extends 'labapp/base.html' %}
+
+{% block title %}Weekly Updates | MI Lab{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Weekly Updates</h1>
+
+{% if user.is_authenticated and not user.is_staff and not user.is_superuser and user.role != 'Faculty' %}
+<div class="mb-3">
+  <a href="{% url 'add_weekly_update' %}" class="btn btn-success">Submit Update</a>
+</div>
+{% endif %}
+
+{% if updates %}
+  {% for update in updates %}
+  <div class="card mb-4 shadow-sm">
+    <div class="card-body">
+      <h5 class="card-title mb-1">{{ update.project_name }}</h5>
+      {% if update.title %}<h6 class="card-subtitle mb-2 text-muted">{{ update.title }}</h6>{% endif %}
+      <div class="mb-2 text-muted" style="font-size:.85rem;">
+        {% if user.is_staff or user.is_superuser or user.role == 'Faculty' %}
+          <strong>By:</strong> {{ update.user.get_full_name|default:update.user.username }} |
+        {% endif %}
+        <strong>Date:</strong> {{ update.created_at|date:'d M Y, h:i A' }}
+      </div>
+      <div class="card-text">
+        {{ update.content|safe }}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+{% else %}
+  <p>No updates submitted yet.</p>
+{% endif %}
+
+{% endblock %}

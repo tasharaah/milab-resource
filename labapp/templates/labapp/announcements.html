@@ -1,0 +1,33 @@
+{% extends 'labapp/base.html' %}
+
+{% block title %}Announcements | MI Lab{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Announcements</h1>
+
+{% if user.is_staff or user.is_superuser or user.role == 'Faculty' %}
+<div class="mb-3">
+  <a href="{% url 'add_announcement' %}" class="btn btn-success">Post Announcement</a>
+</div>
+{% endif %}
+
+{% if announcements %}
+  {% for ann in announcements %}
+  <div class="card mb-4 shadow-sm">
+    <div class="card-body">
+      <h5 class="card-title mb-1">{{ ann.title }}</h5>
+      <div class="mb-2 text-muted" style="font-size:.85rem;">
+        <strong>By:</strong> {{ ann.author.get_full_name|default:ann.author.username }} |
+        <strong>Date:</strong> {{ ann.created_at|date:'d M Y, h:i A' }}
+      </div>
+      <div class="card-text">
+        {{ ann.content|safe }}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+{% else %}
+  <p>No announcements available.</p>
+{% endif %}
+
+{% endblock %}

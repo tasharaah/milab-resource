@@ -42,6 +42,22 @@ urlpatterns = [
     # Statistics dashboard for admins
     path('stats/', views.stats, name='stats'),
 
+    # Print usage stats (PDF) page for admins
+    path('stats/print/', views.print_usage_stats, name='print_usage_stats'),
+
+    # User management (faculties/staff)
+    path('users/manage/', views.manage_users, name='manage_users'),
+    path('users/delete/<int:user_id>/', views.delete_user, name='delete_user'),
+
+    # Booking description update
+    path('bookings/update-description/<int:booking_id>/', views.update_booking_description, name='update_booking_description'),
+
+    # Weekly updates and announcements
+    path('updates/', views.weekly_updates, name='weekly_updates'),
+    path('updates/new/', views.add_weekly_update, name='add_weekly_update'),
+    path('announcements/', views.announcements, name='announcements'),
+    path('announcements/new/', views.add_announcement, name='add_announcement'),
+
     # Authentication
     path('login/', auth_views.LoginView.as_view(template_name='labapp/login.html'), name='login'),
     path('logout/', auth_views.LogoutView.as_view(next_page='login'), name='logout'),

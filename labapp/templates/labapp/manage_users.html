@@ -1,0 +1,64 @@
+{% extends 'labapp/base.html' %}
+
+{% block title %}Manage Users | MI Lab{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Manage Users</h1>
+
+<form class="row g-3 mb-4" method="get">
+  <div class="col-auto">
+    <label for="roleFilter" class="visually-hidden">Role</label>
+    <select id="roleFilter" name="role" class="form-select" onchange="this.form.submit()">
+      {% for value,label in roles_for_filter %}
+        <option value="{{ value }}" {% if selected_role == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+</form>
+
+{% if users %}
+<div class="table-responsive">
+  <table class="table table-striped align-middle">
+    <thead>
+      <tr>
+        <th scope="col">Username</th>
+        <th scope="col">Name</th>
+        <th scope="col">Role</th>
+        <th scope="col">Email</th>
+        <th scope="col">Phone</th>
+        <th scope="col">Contact</th>
+        <th scope="col">Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in users %}
+      <tr>
+        <td>{{ u.username }}</td>
+        <td>{{ u.get_full_name|default:u.username }}</td>
+        <td>{{ u.role }}</td>
+        <td>{{ u.email }}</td>
+        <td>{{ u.phone|default:'—' }}</td>
+        <td>
+          {% if u.phone %}
+          <a href="https://wa.me/{{ u.phone|urlencode }}" target="_blank" class="me-2 text-success" title="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+          {% endif %}
+          {% if u.email %}
+          <a href="mailto:{{ u.email }}" class="text-primary" title="Email"><i class="fa-solid fa-envelope"></i></a>
+          {% endif %}
+        </td>
+        <td>
+          <form method="post" action="{% url 'delete_user' u.id %}" onsubmit="return confirm('Delete user {{ u.username }}?');">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p>No users found for this role.</p>
+{% endif %}
+
+{% endblock %}

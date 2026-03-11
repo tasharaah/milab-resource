@@ -25,9 +25,20 @@ from django.db.models import Count
 from django.utils.crypto import get_random_string
 from typing import Any, Dict
 import json
+from django.http import HttpResponse
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
 
 from .models import Booking, Resource, RegistrationRequest
-from .forms import BookingForm, AddAdminForm, ResourceForm, RegistrationRequestForm, AssignAdminForm
+from .forms import (
+    BookingForm,
+    AddAdminForm,
+    ResourceForm,
+    RegistrationRequestForm,
+    AssignAdminForm,
+    WeeklyUpdateForm,
+    AnnouncementForm,
+)
 
 
 User = get_user_model()
@@ -126,12 +137,47 @@ def create_booking(request):
     if request.method == 'POST':
         if form.is_valid():
             booking = form.save(commit=False)
-            booking.user = request.user  # type: ignore
-            # Always set the start time to now. This ensures bookings
-            # start immediately and are not scheduled for the future.
+            # Determine who the booking is for.  Faculty and staff may
+            # assign a booking to another user using the assignee field.
+            assignee = form.cleaned_data.get('assignee')
+            if assignee and is_faculty_user(request.user):
+                # Assign resource to selected user and record creator
+                booking.user = assignee
+                booking.created_by = request.user
+            else:
+                booking.user = request.user  # type: ignore
+                booking.created_by = request.user  # so we know who made the booking
+            # Always set the start time to now so bookings begin
+            # immediately rather than in the future.
             booking.start_time = timezone.now()
             booking.save()
+            # If this booking was made on behalf of someone else,
+            # notify the assignee via email (if available).  The
+            # notification is best effort; failures should not block
+            # booking creation.
+            if assignee and is_faculty_user(request.user):
+                try:
+                    send_mail(
+                        subject="MI Lab | A resource has been booked for you",
+                        message=(
+                            f"Hello {assignee.first_name or assignee.username},\n\n"
+                            f"{request.user.get_full_name() or request.user.username} has booked the resource "
+                            f"{booking.resource.name} for you starting now until {booking.end_time}.\n\n"
+                            "Please log in to your MI Lab account to view details.\n\n"
+                            "— MI Lab"
+                        ),
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        recipient_list=[assignee.email],
+                        fail_silently=True,
+                    )
+                except Exception:
+                    # ignore email errors; booking is still created
+                    pass
             messages.success(request, 'Booking created successfully.')
+            # If the current user is faculty/staff, redirect them to
+            # the admin bookings list; otherwise go to their own bookings
+            if is_faculty_user(request.user):
+                return redirect('all_bookings')
             return redirect('my_bookings')
         else:
             # show validation errors using messages
@@ -448,13 +494,21 @@ def add_admin(request):
 
 
 def register_request(request):
+    """
+    Handle submission of the public registration form.  The
+    RegistrationRequestForm already stores the selected role,
+    password hash and optional phone number.  Upon successful
+    validation the request is saved and the applicant is
+    redirected to the login page with a success message.
+    """
     if request.method == 'POST':
         form = RegistrationRequestForm(request.POST)
         if form.is_valid():
-            req = form.save(commit=False)
-            req.role = User.Role.RA
-            req.save()
-            messages.success(request, "Registration request submitted! An admin will review and approve it.")
+            form.save()
+            messages.success(
+                request,
+                "Registration request submitted! An admin will review and approve it.",
+            )
         else:
             messages.error(request, "Please correct the errors in the form.")
     return redirect('login')
@@ -486,15 +540,20 @@ def approve_registration(request, req_id: int):
         status=RegistrationRequest.Status.PENDING
     )
 
+    # Create a new user from the registration request.  Assign the
+    # requested role and phone number.  The password hash from
+    # RegistrationRequest.password_hash is copied directly onto the
+    # User.password field so that the user can log in immediately.
     new_user = User.objects.create_user(
         username=reg_req.username,
         email=reg_req.email,
         first_name=reg_req.first_name,
         last_name=reg_req.last_name,
-        role=User.Role.RA,
+        role=reg_req.role,
         password=None,
     )
     new_user.password = reg_req.password_hash  # stored Django hash
+    new_user.phone = reg_req.phone
     new_user.is_active = True
     new_user.save()
 
@@ -717,8 +776,8 @@ def stats(request):
     end_param = request.GET.get('end')
     period = request.GET.get('period', '')
     now = timezone.now()
-    # Compute default range if none provided: last 30 days
-    default_start = now - timezone.timedelta(days=30)
+    # Compute default range if none provided: last week (7 days)
+    default_start = now - timezone.timedelta(days=7)
     default_end = now
     start_date = None
     end_date = None
@@ -749,10 +808,16 @@ def stats(request):
             start_date = None
             end_date = None
 
-    # Use default if still missing
-    if start_date is None and end_date is None:
+    # Use default if still missing.  By default we display the last
+    # week of statistics and mark the period as "last_week".
+    selected_period = request.GET.get('period', '')
+    if start_date is None and end_date is None and not selected_period:
         start_date = default_start
         end_date = default_end
+        selected_period = 'last_week'
+    else:
+        # If a predefined period was supplied we preserve it for the template
+        selected_period = selected_period or ''
 
     # Filter by RA
     ra_param = request.GET.get('ra', 'all')
@@ -830,6 +895,8 @@ def stats(request):
         'pie_values_json': json.dumps(pie_values),
         'hour_labels_json': json.dumps(list(range(24))),
         'hour_counts_json': json.dumps(start_hour_counts),
+        # Selected quick range for template default selection
+        'selected_period': selected_period,
     }
     return render(request, 'labapp/stats.html', context)
 
@@ -868,3 +935,397 @@ def active_bookings_admin(request):
         end_time__gte=now,
     ).select_related('user', 'resource').order_by('-start_time')
     return render(request, 'labapp/active_bookings_admin.html', {'bookings': active_bookings})
+
+
+# ---------------------------------------------------------------------------
+# New view functions for user management, weekly updates and announcements
+
+@never_cache
+@login_required
+def manage_users(request):
+    """
+    Display a filterable table of all non‑superuser accounts for
+    administrators.  Faculty and staff can filter users by role
+    (research assistant, student or intern) and can delete accounts.
+    """
+    user: User = request.user  # type: ignore
+    if not is_faculty_user(user):
+        return redirect('ra_dashboard')
+    role_filter = request.GET.get('role', 'all')
+    users_qs = User.objects.filter(is_superuser=False).order_by('username')
+    valid_roles = [User.Role.RA, User.Role.STUDENT, User.Role.INTERN]
+    if role_filter in valid_roles:
+        users_qs = users_qs.filter(role=role_filter)
+    # Build list of roles for filter dropdown
+    roles_for_filter = [
+        ('all', 'All'),
+        (User.Role.RA, 'Research Assistants'),
+        (User.Role.STUDENT, 'Students'),
+        (User.Role.INTERN, 'Interns'),
+    ]
+    context = {
+        'users': users_qs,
+        'roles_for_filter': roles_for_filter,
+        'selected_role': role_filter,
+    }
+    return render(request, 'labapp/manage_users.html', context)
+
+
+@never_cache
+@login_required
+def delete_user(request, user_id: int):
+    """
+    Remove a non‑superuser account.  Only faculty, staff and superusers
+    may perform this action.  Deleting a user cascades to any related
+    bookings or updates.  The current user cannot delete themselves
+    through this view.
+    """
+    user: User = request.user  # type: ignore
+    if not is_faculty_user(user):
+        return redirect('ra_dashboard')
+    target = get_object_or_404(User, pk=user_id, is_superuser=False)
+    if request.method == 'POST':
+        if target == user:
+            messages.warning(request, "You cannot delete your own account from here.")
+        else:
+            username = target.username
+            target.delete()
+            messages.success(request, f'User "{username}" deleted.')
+    return redirect('manage_users')
+
+
+@never_cache
+@login_required
+def update_booking_description(request, booking_id: int):
+    """
+    Allow a user to update the description on a booking.  Owners can
+    edit their own bookings; faculty and staff can edit any booking.
+    After saving, the user is redirected back to the referring page.
+    """
+    booking = get_object_or_404(Booking, pk=booking_id)
+    current_user: User = request.user  # type: ignore
+    # Only allow editing if the current user owns the booking or has
+    # elevated privileges
+    if booking.user != current_user and not is_faculty_user(current_user):
+        messages.error(request, 'You are not authorized to edit this booking.')
+        return redirect('my_bookings')
+    if request.method == 'POST':
+        desc = request.POST.get('description', '')
+        booking.description = desc
+        booking.save(update_fields=['description'])
+        messages.success(request, 'Booking description updated.')
+        next_page = request.GET.get('next')
+        if next_page:
+            return redirect(next_page)
+        return redirect('my_bookings' if not is_faculty_user(current_user) else 'all_bookings')
+    # If GET, render a simple form (not used in inline editing)
+    return render(request, 'labapp/update_booking_description.html', {'booking': booking})
+
+
+@never_cache
+@login_required
+def weekly_updates(request):
+    """
+    Display a list of weekly updates.  Faculty and staff see all
+    updates across projects and users.  RAs, students and interns
+    only see their own updates.  Updates are ordered from newest to
+    oldest.
+    """
+    user: User = request.user  # type: ignore
+    from .models import WeeklyUpdate  # local import to avoid circular
+    if is_faculty_user(user):
+        updates = WeeklyUpdate.objects.select_related('user').all().order_by('-created_at')
+    else:
+        updates = WeeklyUpdate.objects.filter(user=user).order_by('-created_at')
+    return render(request, 'labapp/weekly_updates.html', {'updates': updates})
+
+
+@never_cache
+@login_required
+def add_weekly_update(request):
+    """
+    Submit a new weekly update.  Only research assistants, students
+    and interns are expected to submit updates, but faculty may also
+    use this form.  Uses the rich text editor on the client to fill
+    the content field.
+    """
+    user: User = request.user  # type: ignore
+    # Only allow RAs, students and interns to submit weekly updates.  If
+    # the current user is faculty or staff, redirect them to the
+    # updates list without processing the form.
+    if is_faculty_user(user):
+        messages.info(request, 'Faculty cannot submit weekly updates.')
+        return redirect('weekly_updates')
+    if request.method == 'POST':
+        form = WeeklyUpdateForm(request.POST)
+        if form.is_valid():
+            update = form.save(commit=False)
+            update.user = user
+            update.save()
+            messages.success(request, 'Weekly update submitted.')
+            return redirect('weekly_updates')
+        else:
+            messages.error(request, 'Please correct the errors in the form.')
+    else:
+        form = WeeklyUpdateForm()
+    return render(request, 'labapp/add_weekly_update.html', {'form': form})
+
+
+@never_cache
+@login_required
+def announcements(request):
+    """
+    Display a list of announcements to all users.  Announcements are
+    ordered from newest to oldest.  Faculty and staff see a button
+    linking to the announcement creation page.
+    """
+    from .models import Announcement  # local import to avoid circular
+    all_ann = Announcement.objects.select_related('author').all().order_by('-created_at')
+    return render(request, 'labapp/announcements.html', {'announcements': all_ann})
+
+
+@never_cache
+@login_required
+def add_announcement(request):
+    """
+    Post a new announcement.  Only faculty, staff and superusers may
+    create announcements.  The content is provided as HTML from a
+    rich text editor on the client.
+    """
+    user: User = request.user  # type: ignore
+    if not is_faculty_user(user):
+        return redirect('announcements')
+    if request.method == 'POST':
+        form = AnnouncementForm(request.POST)
+        if form.is_valid():
+            announcement = form.save(commit=False)
+            announcement.author = user
+            announcement.save()
+            messages.success(request, 'Announcement posted.')
+            return redirect('announcements')
+        else:
+            messages.error(request, 'Please correct the errors in the form.')
+    else:
+        form = AnnouncementForm()
+    return render(request, 'labapp/add_announcement.html', {'form': form})
+
+# --------------------------------------------------------------------------
+# View to print usage statistics to PDF
+
+@never_cache
+@login_required
+def print_usage_stats(request):
+    """
+    Display a form to select a research assistant and date range, and
+    generate a PDF of usage statistics.  Only accessible to faculty,
+    staff and superusers.  On GET, render the form; on POST, return a
+    PDF summarising total hours spent per resource and per user in the
+    selected range.  If no range is provided, defaults to last week.
+    """
+    user: User = request.user  # type: ignore
+    if not is_faculty_user(user):
+        return redirect('ra_dashboard')
+    # Prepare list of RA/student/intern users
+    ra_list = User.objects.filter(role__in=[User.Role.RA, User.Role.STUDENT, User.Role.INTERN], is_superuser=False).order_by('username')
+    if request.method == 'POST':
+        # Parse form fields
+        ra_param = request.POST.get('ra', 'all')
+        period = request.POST.get('period', '')
+        start_param = request.POST.get('start')
+        end_param = request.POST.get('end')
+        now = timezone.now()
+        # Determine date range
+        start_date = None
+        end_date = None
+        try:
+            if start_param:
+                start_date = timezone.make_aware(timezone.datetime.fromisoformat(start_param))
+            if end_param:
+                end_date = timezone.make_aware(timezone.datetime.fromisoformat(end_param)) + timezone.timedelta(days=1)
+        except Exception:
+            start_date = None
+            end_date = None
+        # Predefined period overrides
+        if period:
+            if period == 'last_week':
+                start_date = now - timezone.timedelta(days=7)
+                end_date = now
+            elif period == 'last_month':
+                start_date = now - timezone.timedelta(days=30)
+                end_date = now
+            elif period == 'last_3_months':
+                start_date = now - timezone.timedelta(days=90)
+                end_date = now
+            elif period == 'last_year':
+                start_date = now - timezone.timedelta(days=365)
+                end_date = now
+            elif period == 'all':
+                start_date = None
+                end_date = None
+        # Default range if none provided
+        if start_date is None and end_date is None:
+            start_date = now - timezone.timedelta(days=7)
+            end_date = now
+        # Filter bookings
+        bookings = Booking.objects.all().select_related('user', 'resource')
+        if start_date is not None:
+            bookings = bookings.filter(start_time__gte=start_date)
+        if end_date is not None:
+            bookings = bookings.filter(start_time__lte=end_date)
+        if ra_param != 'all':
+            try:
+                ra_id = int(ra_param)
+                bookings = bookings.filter(user__id=ra_id)
+            except ValueError:
+                pass
+        # Aggregate durations per resource and per user
+        durations_by_resource: Dict[str, float] = {}
+        durations_by_user: Dict[str, float] = {}
+        for b in bookings:
+            # Clip start/end times to selected range
+            s = b.start_time
+            e = b.end_time or now
+            if start_date:
+                s = max(s, start_date)
+            if end_date:
+                e = min(e, end_date)
+            dur = (e - s).total_seconds() / 3600.0
+            durations_by_resource[b.resource.name] = durations_by_resource.get(b.resource.name, 0.0) + dur
+            durations_by_user[b.user.username] = durations_by_user.get(b.user.username, 0.0) + dur
+        # Generate PDF
+        response = HttpResponse(content_type='application/pdf')
+        filename_parts = ['usage_stats']
+        if ra_param != 'all':
+            selected_user = User.objects.filter(pk=ra_param).first()
+            if selected_user:
+                filename_parts.append(selected_user.username)
+        filename_parts.append(timezone.now().strftime('%Y%m%d%H%M%S'))
+        response['Content-Disposition'] = f"attachment; filename={'_'.join(filename_parts)}.pdf"
+        p = canvas.Canvas(response, pagesize=letter)
+        width, height = letter
+        y = height - 50
+        title = "MI Lab Usage Statistics"
+        p.setFont("Helvetica-Bold", 16)
+        p.drawString(50, y, title)
+        y -= 30
+        # Date range summary
+        p.setFont("Helvetica", 10)
+        range_str = ''
+        if start_date:
+            range_str += f"From {start_date.date()} "
+        if end_date:
+            range_str += f"to {(end_date - timezone.timedelta(days=1)).date()}"
+        if range_str:
+            p.drawString(50, y, range_str)
+            y -= 20
+        # RA selection summary
+        if ra_param != 'all':
+            ra_obj = User.objects.filter(pk=ra_param).first()
+            if ra_obj:
+                p.drawString(50, y, f"User: {ra_obj.get_full_name() or ra_obj.username}")
+                y -= 20
+        # Resource summary
+        p.setFont("Helvetica-Bold", 12)
+        p.drawString(50, y, "Hours by Resource:")
+        y -= 18
+        p.setFont("Helvetica", 10)
+        if not durations_by_resource:
+            p.drawString(60, y, "No data available.")
+            y -= 14
+        else:
+            for res_name, hours in sorted(durations_by_resource.items(), key=lambda x: -x[1]):
+                p.drawString(60, y, f"{res_name}: {hours:.2f} hours")
+                y -= 14
+                if y < 100:
+                    p.showPage()
+                    y = height - 50
+                    p.setFont("Helvetica", 10)
+        y -= 10
+        # User summary
+        p.setFont("Helvetica-Bold", 12)
+        p.drawString(50, y, "Hours by User:")
+        y -= 18
+        p.setFont("Helvetica", 10)
+        if not durations_by_user:
+            p.drawString(60, y, "No data available.")
+            y -= 14
+        else:
+            for usr_name, hours in sorted(durations_by_user.items(), key=lambda x: -x[1]):
+                p.drawString(60, y, f"{usr_name}: {hours:.2f} hours")
+                y -= 14
+                if y < 50:
+                    p.showPage()
+                    y = height - 50
+                    p.setFont("Helvetica", 10)
+        # Add a table of bookings if there is space on the current page; if
+        # not, start a new page.  Each booking row shows the resource,
+        # user, start and end times and the duration in hours.  This
+        # provides a detailed record of the period being printed.
+        y -= 20
+        p.setFont("Helvetica-Bold", 12)
+        p.drawString(50, y, "Booking Details:")
+        y -= 18
+        p.setFont("Helvetica", 9)
+        # Table header
+        p.drawString(50, y, "Resource")
+        p.drawString(180, y, "User")
+        p.drawString(260, y, "Start")
+        p.drawString(360, y, "End")
+        p.drawString(460, y, "Hours")
+        y -= 14
+        # Horizontal line
+        p.line(50, y, 550, y)
+        y -= 14
+        if not bookings:
+            p.drawString(50, y, "No bookings in selected range.")
+            y -= 14
+        else:
+            for b in bookings.order_by('start_time'):
+                # Clip start/end times for display
+                s = b.start_time
+                e = b.end_time or now
+                disp_s = s
+                disp_e = e
+                if start_date:
+                    disp_s = max(s, start_date)
+                if end_date:
+                    disp_e = min(e, end_date)
+                duration = (disp_e - disp_s).total_seconds() / 3600.0
+                p.drawString(50, y, b.resource.name[:18])
+                p.drawString(180, y, (b.user.get_full_name() or b.user.username)[:14])
+                p.drawString(260, y, disp_s.astimezone(timezone.get_current_timezone()).strftime('%d-%b %H:%M'))
+                p.drawString(360, y, disp_e.astimezone(timezone.get_current_timezone()).strftime('%d-%b %H:%M'))
+                p.drawRightString(520, y, f"{duration:.1f}")
+                y -= 12
+                if y < 60:
+                    p.showPage()
+                    y = height - 50
+                    p.setFont("Helvetica", 9)
+                    # Redraw table header on new page
+                    p.setFont("Helvetica-Bold", 12)
+                    p.drawString(50, y, "Booking Details (cont.)")
+                    y -= 18
+                    p.setFont("Helvetica", 9)
+                    p.drawString(50, y, "Resource")
+                    p.drawString(180, y, "User")
+                    p.drawString(260, y, "Start")
+                    p.drawString(360, y, "End")
+                    p.drawString(460, y, "Hours")
+                    y -= 14
+                    p.line(50, y, 550, y)
+                    y -= 14
+        # Finalise document
+        p.showPage()
+        p.save()
+        return response
+    else:
+        # GET request: show filter form
+        # Default selected period is last_week, default RA is 'all'
+        context: Dict[str, Any] = {
+            'ra_list': ra_list,
+            'selected_ra': 'all',
+            'selected_period': 'last_week',
+            'start_date': '',
+            'end_date': '',
+        }
+        return render(request, 'labapp/print_usage_stats.html', context)

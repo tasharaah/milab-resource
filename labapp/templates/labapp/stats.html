@@ -33,23 +33,24 @@
       {% endfor %}
     </select>
   </div>
-  <div class="col-md-2">
+  <!-- Custom date range fields.  Wrapped in a container so we can hide/show via JS -->
+  <div id="custom-range-fields" class="col-md-2">
     <label class="form-label">Start Date</label>
     <input type="date" name="start" value="{{ start_date }}" class="form-control">
   </div>
-  <div class="col-md-2">
+  <div id="custom-range-fields-end" class="col-md-2">
     <label class="form-label">End Date</label>
     <input type="date" name="end" value="{{ end_date }}" class="form-control">
   </div>
   <div class="col-md-2">
     <label class="form-label">Quick Range</label>
-    <select name="period" class="form-select">
-      <option value="">Custom</option>
-      <option value="last_week">Last Week</option>
-      <option value="last_month">Last Month</option>
-      <option value="last_3_months">Last 3 Months</option>
-      <option value="last_year">Last Year</option>
-      <option value="all">All Time</option>
+    <select id="periodSelect" name="period" class="form-select">
+      <option value="" {% if selected_period == '' %}selected{% endif %}>Custom</option>
+      <option value="last_week" {% if selected_period == 'last_week' %}selected{% endif %}>Last Week</option>
+      <option value="last_month" {% if selected_period == 'last_month' %}selected{% endif %}>Last Month</option>
+      <option value="last_3_months" {% if selected_period == 'last_3_months' %}selected{% endif %}>Last 3 Months</option>
+      <option value="last_year" {% if selected_period == 'last_year' %}selected{% endif %}>Last Year</option>
+      <option value="all" {% if selected_period == 'all' %}selected{% endif %}>All Time</option>
     </select>
   </div>
   <div class="col-md-12 col-lg-2 align-self-end">
@@ -199,6 +200,28 @@ document.addEventListener('DOMContentLoaded', () => {
       },
     },
   });
+
+  // Toggle custom date fields based on selected period.  When a quick
+  // range is chosen (non‑empty value), hide the date inputs.  When
+  // "Custom" is selected (empty value), show the date inputs.  This
+  // ensures that users do not enter start/end dates when using a
+  // predefined period.  This function will run on page load and
+  // whenever the quick range dropdown changes.
+  function toggleDateFields() {
+    const periodSelect = document.getElementById('periodSelect');
+    if (!periodSelect) return;
+    const showCustom = periodSelect.value === '';
+    const startContainer = document.getElementById('custom-range-fields');
+    const endContainer = document.getElementById('custom-range-fields-end');
+    if (startContainer) startContainer.style.display = showCustom ? '' : 'none';
+    if (endContainer) endContainer.style.display = showCustom ? '' : 'none';
+  }
+  const periodSelectElem = document.getElementById('periodSelect');
+  if (periodSelectElem) {
+    periodSelectElem.addEventListener('change', toggleDateFields);
+    // Call once on load to set initial state
+    toggleDateFields();
+  }
 });
 </script>
 {% endblock %}

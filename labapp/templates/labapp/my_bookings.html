@@ -20,7 +20,8 @@
                 <th scope="col">Software</th>
                 <th scope="col">Start</th>
                 <th scope="col">End</th>
-                <th scope="col">Action</th>
+                <th scope="col">Description</th>
+                <th scope="col">Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -31,6 +32,18 @@
                 <td>{{ booking.software|default:'—' }}</td>
                 <td>{{ booking.start_time|date:'d M, Y h:i A' }}</td>
                 <td>{{ booking.end_time|date:'d M, Y h:i A' }}</td>
+                <td style="min-width:200px;">
+                  {# Show description text with an edit icon. On click, reveal the editing form #}
+                  <span class="desc-text" id="desc-text-{{ booking.id }}">{{ booking.description|default:'—' }}</span>
+                  <a href="#" class="ms-2 edit-desc-link" data-booking-id="{{ booking.id }}" title="Edit Description"><i class="fa-solid fa-pen"></i></a>
+                  <form method="post" action="{% url 'update_booking_description' booking.id %}?next={{ request.path }}" class="desc-form mt-2 d-none">
+                    {% csrf_token %}
+                    <div class="input-group input-group-sm">
+                      <textarea name="description" class="form-control" rows="2">{{ booking.description }}</textarea>
+                      <button type="submit" class="btn btn-primary">Save</button>
+                    </div>
+                  </form>
+                </td>
                 <td>
                     <a href="{% url 'release_booking' booking.id %}" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to release this resource?');">Release</a>
                 </td>
@@ -65,7 +78,7 @@
                 <td>{{ booking.software|default:'—' }}</td>
                 <td>{{ booking.start_time|date:'d M, Y h:i A' }}</td>
                 <td>{{ booking.end_time|date:'d M, Y h:i A' }}</td>
-                <td>{{ booking.description|default:'—' }}</td>
+                <td style="min-width:200px;">{{ booking.description|default:'—' }}</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -75,4 +88,26 @@
 <p>No past bookings.</p>
 {% endif %}
 
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Attach click handlers to edit description links. When clicked,
+    // hide the static description text and show the inline form. Only
+    // one form is visible at a time.
+    document.querySelectorAll('.edit-desc-link').forEach(function(link) {
+      link.addEventListener('click', function(evt) {
+        evt.preventDefault();
+        const bookingId = this.getAttribute('data-booking-id');
+        const textSpan = document.getElementById('desc-text-' + bookingId);
+        const form = this.nextElementSibling;
+        if (!form) return;
+        // Hide text, show form
+        textSpan.style.display = 'none';
+        form.classList.remove('d-none');
+      });
+    });
+  });
+</script>
 {% endblock %}

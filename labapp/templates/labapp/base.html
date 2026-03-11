@@ -168,20 +168,76 @@
       <div class="container pb-2">
 
         <div class="navpills">
+          <!-- Dashboard always accessible -->
           <a class="pill" href="{% url 'dashboard' %}"><i class="fa-solid fa-gauge-high"></i> Dashboard</a>
-          <a class="pill" href="{% url 'create_booking' %}"><i class="fa-solid fa-calendar-plus"></i> Book Resource</a>
-          <a class="pill" href="{% url 'my_bookings' %}"><i class="fa-solid fa-list-check"></i> My Bookings</a>
 
-          {# Resource availability and active resources accessible to all users #}
-          <a class="pill" href="{% url 'available_resources' %}"><i class="fa-solid fa-check-circle"></i> Available</a>
-          <a class="pill" href="{% url 'active_resources' %}"><i class="fa-solid fa-clock"></i> Active</a>
+          <!-- Bookings dropdown -->
+          <div class="dropdown">
+            <a class="pill dropdown-toggle" href="#" id="ddBookings" data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="fa-solid fa-calendar-plus"></i> Bookings
+            </a>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" href="{% url 'create_booking' %}">New Booking</a></li>
+              {% if user.is_staff or user.is_superuser or user.role == 'Faculty' %}
+                <li><a class="dropdown-item" href="{% url 'all_bookings' %}">All Bookings</a></li>
+                <li><a class="dropdown-item" href="{% url 'active_bookings_admin' %}">Active Bookings</a></li>
+                <!-- Show a link to the current user's own bookings even for faculty/admin -->
+                <li><a class="dropdown-item" href="{% url 'my_bookings' %}">My Bookings</a></li>
+              {% else %}
+                <li><a class="dropdown-item" href="{% url 'my_bookings' %}">My Bookings</a></li>
+              {% endif %}
+              <li><a class="dropdown-item" href="{% url 'available_resources' %}">Available Resources</a></li>
+              <li><a class="dropdown-item" href="{% url 'active_resources' %}">Active Resources</a></li>
+            </ul>
+          </div>
 
+          <!-- Resources dropdown (admin only) -->
           {% if user.is_staff or user.is_superuser or user.role == 'Faculty' %}
-            <a class="pill" href="{% url 'all_bookings' %}"><i class="fa-solid fa-table-list"></i> All Bookings</a>
-            <a class="pill" href="{% url 'add_resource' %}"><i class="fa-solid fa-computer"></i> Resources</a>
-            <a class="pill" href="{% url 'registration_requests_admin' %}"><i class="fa-solid fa-user-check"></i> Requests</a>
-            <a class="pill" href="{% url 'add_admin' %}"><i class="fa-solid fa-user-plus"></i> Add Admin</a>
+          <div class="dropdown">
+            <a class="pill dropdown-toggle" href="#" id="ddResources" data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="fa-solid fa-computer"></i> Resources
+            </a>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" href="{% url 'add_resource' %}">Add Resource</a></li>
+              <li><a class="dropdown-item" href="{% url 'list_resources' %}">Manage Resources</a></li>
+              <li><a class="dropdown-item" href="{% url 'print_usage_stats' %}">Print Usage Stats</a></li>
+            </ul>
+          </div>
+
+          <!-- Users dropdown (admin only) -->
+          <div class="dropdown">
+            <a class="pill dropdown-toggle" href="#" id="ddUsers" data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="fa-solid fa-users"></i> Users
+            </a>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" href="{% url 'manage_users' %}">Manage Users</a></li>
+              <li><a class="dropdown-item" href="{% url 'registration_requests_admin' %}">Registration Requests</a></li>
+              <li><a class="dropdown-item" href="{% url 'add_admin' %}">Admin Privileges</a></li>
+            </ul>
+          </div>
+          {% else %}
+          <!-- My bookings link for non-admin users (redundant but keeps nav accessible) -->
+          <a class="pill" href="{% url 'my_bookings' %}"><i class="fa-solid fa-list-check"></i> My Bookings</a>
           {% endif %}
+
+          <!-- Updates dropdown accessible to all -->
+          <div class="dropdown">
+            <a class="pill dropdown-toggle" href="#" id="ddUpdates" data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="fa-solid fa-bell"></i> Updates
+            </a>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" href="{% url 'weekly_updates' %}">Weekly Updates</a></li>
+              {# Show submit update link only for non-faculty, non-staff users #}
+              {% if not user.is_staff and not user.is_superuser and user.role != 'Faculty' %}
+                <li><a class="dropdown-item" href="{% url 'add_weekly_update' %}">Submit Update</a></li>
+              {% endif %}
+              <li><a class="dropdown-item" href="{% url 'announcements' %}">Announcements</a></li>
+              {% if user.is_staff or user.is_superuser or user.role == 'Faculty' %}
+                <li><a class="dropdown-item" href="{% url 'add_announcement' %}">Post Announcement</a></li>
+              {% endif %}
+            </ul>
+          </div>
+
         </div>
       </div>
     {% endif %}

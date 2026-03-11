@@ -17,7 +17,7 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-change-me')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 # DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
-DEBUG = False
+DEBUG = True
 
 # Allow all hosts for development and Cloud Run. In production you
 # should restrict this value.

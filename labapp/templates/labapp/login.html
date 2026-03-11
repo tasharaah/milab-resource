@@ -74,12 +74,23 @@
                         <label for="id_reg_password1" class="form-label">Password</label>
                         <input type="password" name="password1" id="id_reg_password1"
                                 class="form-control" placeholder="Create password" required>
-                        </div>
-
-                        <div class="mb-3">
+                    </div>
+                    <div class="mb-3">
                         <label for="id_reg_password2" class="form-label">Confirm Password</label>
                         <input type="password" name="password2" id="id_reg_password2"
                                 class="form-control" placeholder="Confirm password" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_reg_role" class="form-label">Role</label>
+                        <select name="role" id="id_reg_role" class="form-select" required>
+                            <option value="RA">Research Assistant</option>
+                            <option value="Student">Student</option>
+                            <option value="Intern">Intern</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_reg_phone" class="form-label">Phone Number (optional)</label>
+                        <input type="text" name="phone" id="id_reg_phone" class="form-control" placeholder="Phone number">
                     </div>
 
                     <small class="text-muted">An administrator will review your request. You will be notified when your account is created.</small>
