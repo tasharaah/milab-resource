@@ -16,7 +16,8 @@
 
 <div class="row">
     <div class="col-md-2 mb-3">
-        <a href="{% url 'list_resources' %}" class="text-decoration-none text-dark">
+        <!-- Link the total resources box to the manage resources page (add_resource) -->
+        <a href="{% url 'add_resource' %}" class="text-decoration-none text-dark">
           <div class="stat-card h-100">
               <div class="stat-top">
                   <div class="stat-icon bg-primary"><i class="fa fa-layer-group"></i></div>
@@ -42,7 +43,8 @@
         </a>
     </div>
     <div class="col-md-2 mb-3">
-        <a href="{% url 'active_bookings_admin' %}" class="text-decoration-none text-dark">
+        <!-- Active box directs to the all bookings page -->
+        <a href="{% url 'all_bookings' %}" class="text-decoration-none text-dark">
           <div class="stat-card h-100">
               <div class="stat-top">
                   <div class="stat-icon bg-warning"><i class="fa fa-clock"></i></div>
@@ -55,20 +57,22 @@
         </a>
     </div>
     <div class="col-md-2 mb-3">
-        <a href="{% url 'list_ras' %}" class="text-decoration-none text-dark">
+        <!-- Total users box directs to manage users page and shows count of all users (non-superuser) -->
+        <a href="{% url 'manage_users' %}" class="text-decoration-none text-dark">
           <div class="stat-card h-100">
               <div class="stat-top">
                   <div class="stat-icon bg-info"><i class="fa fa-user-graduate"></i></div>
                   <div>
-                      <div class="stat-label">Total RAs</div>
-                      <div class="stat-value">{{ total_ras }}</div>
+                      <div class="stat-label">Total Users</div>
+                      <div class="stat-value">{{ total_users }}</div>
                   </div>
               </div>
           </div>
         </a>
     </div>
     <div class="col-md-2 mb-3">
-        <a href="{% url 'list_faculty' %}" class="text-decoration-none text-dark">
+        <!-- Total faculty box directs to manage users page filtered by faculty role -->
+        <a href="{% url 'manage_users' %}?role=Faculty" class="text-decoration-none text-dark">
           <div class="stat-card h-100">
               <div class="stat-top">
                   <div class="stat-icon bg-secondary"><i class="fa fa-chalkboard-teacher"></i></div>

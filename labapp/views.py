@@ -250,8 +250,9 @@ def faculty_dashboard(request):
         return redirect('ra_dashboard')
 
     total_resources = Resource.objects.count()
-    # Exclude superusers from counts
-    total_ras = User.objects.filter(role=User.Role.RA, is_superuser=False).count()
+    # Exclude superusers from counts.  We now compute a total_users count which
+    # includes all roles (RAs, students, interns and faculty) except superusers.
+    total_users = User.objects.filter(is_superuser=False).count()
     total_faculty = User.objects.filter(role=User.Role.FACULTY, is_superuser=False).count()
     # Define now once for the rest of this view
     now = timezone.now()
@@ -432,7 +433,8 @@ def faculty_dashboard(request):
     context: Dict[str, Any] = {
         'total_resources': total_resources,
         'available_resources': available_resources,
-        'total_ras': total_ras,
+        # Use total_users instead of total_ras for the dashboard card
+        'total_users': total_users,
         'total_faculty': total_faculty,
         'active_bookings_count': active_bookings_count,
         'ra_list': ra_list,
@@ -905,17 +907,25 @@ def stats(request):
 @login_required
 def available_resources(request):
     """
-    Display a list of currently available resources (status OK and not booked).
-    Users can navigate to the booking page from here. Accessible to any authenticated user.
+    Display a list of resources with their availability.  A resource is
+    considered unavailable if it is not in OK status or if there is an
+    overlapping active booking at the current time.  Users can still view
+    all resources, but the booking button will be disabled when the resource
+    cannot be reserved.  Accessible to any authenticated user.
     """
     now = timezone.now()
-    busy_ids = Booking.objects.filter(
+    # Determine which resources are currently booked by active bookings
+    busy_ids = list(Booking.objects.filter(
         is_active=True,
         start_time__lte=now,
         end_time__gte=now,
-    ).values_list('resource_id', flat=True).distinct()
-    available = Resource.objects.exclude(id__in=busy_ids).filter(status=Resource.Status.OK).order_by('name')
-    return render(request, 'labapp/available_resources.html', {'resources': available})
+    ).values_list('resource_id', flat=True).distinct())
+    # Return all resources so the template can indicate which are unavailable
+    resources = Resource.objects.all().order_by('name')
+    return render(request, 'labapp/available_resources.html', {
+        'resources': resources,
+        'busy_ids': busy_ids,
+    })
 
 
 @never_cache

@@ -1,9 +1,21 @@
 {% extends 'labapp/base.html' %}
 
-{% block title %}RA Dashboard | MI Lab{% endblock %}
+{% block title %}
+{% if user.role == 'Intern' %}Intern Dashboard{% elif user.role == 'Student' %}Student Dashboard{% elif user.role == 'RA' %}Research Assistant Dashboard{% else %}Dashboard{% endif %} | MI Lab
+{% endblock %}
 
 {% block content %}
-<h1 class="mb-4">Research Assistant Dashboard</h1>
+<h1 class="mb-4">
+  {% if user.role == 'Intern' %}
+    Intern Dashboard
+  {% elif user.role == 'Student' %}
+    Student Dashboard
+  {% elif user.role == 'RA' %}
+    Research Assistant Dashboard
+  {% else %}
+    Dashboard
+  {% endif %}
+</h1>
 
 <div class="row">
     <div class="col-md-4 mb-3">
@@ -85,40 +97,6 @@
     </div>
 </div>
 
-<div class="row mt-4">
-    <div class="col-12">
-        <h3>Recent Past Bookings</h3>
-        {% if my_past_bookings %}
-        <div class="table-responsive">
-            <table class="table table-striped align-middle">
-                <thead>
-                    <tr>
-                        <th scope="col">Resource</th>
-                        <th scope="col">GPU</th>
-                        <th scope="col">Software</th>
-                        <th scope="col">Start</th>
-                        <th scope="col">End</th>
-                        <th scope="col">Description</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for booking in my_past_bookings %}
-                    <tr>
-                        <td>{{ booking.resource.name }}</td>
-                        <td>{{ booking.resource.gpu }}</td>
-                        <td>{{ booking.software|default:'—' }}</td>
-                        <td>{{ booking.start_time|date:'d M, Y h:i A' }}</td>
-                        <td>{{ booking.end_time|date:'d M, Y h:i A' }}</td>
-                        <td>{{ booking.description|default:'—' }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% else %}
-        <p>No past bookings recorded.</p>
-        {% endif %}
-    </div>
-</div>
+{% comment %} Recent Past Bookings section removed as per updated requirements {% endcomment %}
 
 {% endblock %}

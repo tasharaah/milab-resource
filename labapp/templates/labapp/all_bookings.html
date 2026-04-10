@@ -18,6 +18,9 @@
                 <th>Status</th>
                 <th>Description</th>
                 <th>Released At</th>
+                {% if user.is_staff or user.is_superuser or user.role == 'Faculty' %}
+                <th>Action</th>
+                {% endif %}
             </tr>
         </thead>
         <tbody>
@@ -37,6 +40,15 @@
                 </td>
                 <td>{{ booking.description|default:'—' }}</td>
                 <td>{{ booking.released_at|date:'d M, Y h:i A'|default:'—' }}</td>
+                {% if user.is_staff or user.is_superuser or user.role == 'Faculty' %}
+                <td>
+                    {% if booking.currently_active %}
+                    <a href="{% url 'release_booking' booking.id %}?next=all_bookings" class="btn btn-sm btn-danger" onclick="return confirm('End this booking?');">End</a>
+                    {% else %}
+                    —
+                    {% endif %}
+                </td>
+                {% endif %}
             </tr>
             {% endfor %}
         </tbody>

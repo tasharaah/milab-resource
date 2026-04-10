@@ -23,7 +23,12 @@
         <td>{{ r.get_resource_type_display }}</td>
         <td>{{ r.gpu|default:'—' }}</td>
         <td>
-          <a href="{% url 'create_booking' %}?resource={{ r.id }}" class="btn btn-sm btn-primary">Book</a>
+          {# Disable booking when the resource is not OK or currently busy #}
+          {% if r.status != 'OK' or r.id in busy_ids %}
+            <button class="btn btn-sm btn-secondary" disabled>Unavailable</button>
+          {% else %}
+            <a href="{% url 'create_booking' %}?resource={{ r.id }}" class="btn btn-sm btn-primary">Book</a>
+          {% endif %}
         </td>
       </tr>
       {% endfor %}
@@ -31,7 +36,7 @@
   </table>
 </div>
 {% else %}
-<p>No available resources at this moment.</p>
+<p>No resources available.</p>
 {% endif %}
 
 {% endblock %}

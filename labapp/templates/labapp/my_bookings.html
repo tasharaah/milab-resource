@@ -5,9 +5,7 @@
 {% block content %}
 <h1 class="mb-4">My Bookings</h1>
 
-<div class="mb-4">
-    <a href="{% url 'create_booking' %}" class="btn btn-success">New Booking</a>
-</div>
+{# Removed the New Booking button from this page as the option is available via the Bookings dropdown #}
 
 <h3>Active Bookings</h3>
 {% if active_bookings %}
