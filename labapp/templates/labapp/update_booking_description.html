@@ -1,21 +1,48 @@
 {% extends 'labapp/base.html' %}
-
-{% block title %}Update Booking Description | MI Lab{% endblock %}
+{% block title %}Update Description | MI Lab{% endblock %}
 
 {% block content %}
-<h1 class="mb-4">Update Booking Description</h1>
 
-<form method="post">
-  {% csrf_token %}
-  <div class="mb-3">
-    <label class="form-label">Resource</label>
-    <p class="form-control-plaintext">{{ booking.resource.name }}</p>
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Update Booking Description</h1>
+    <p class="page-subtitle">Edit the description for your active booking</p>
   </div>
-  <div class="mb-3">
-    <label class="form-label">Description</label>
-    <textarea name="description" class="form-control" rows="3">{{ booking.description }}</textarea>
+  <a href="{% url 'my_bookings' %}" class="btn btn-secondary">
+    <i class="fa-solid fa-arrow-left me-2"></i>Back to My Bookings
+  </a>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-lg-6 col-md-8">
+    <div class="card">
+      <div class="card-body" style="padding:2rem;">
+
+        <div class="mb-4" style="padding:1rem; background:var(--surface-2); border-radius:var(--radius); border:1px solid var(--border);">
+          <p style="font-size:.78rem; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted); margin:0 0 .25rem;">Resource</p>
+          <p style="font-weight:600; color:var(--text-primary); margin:0; font-size:1rem;">{{ booking.resource.name }}</p>
+        </div>
+
+        <form method="post">
+          {% csrf_token %}
+          <div class="mb-4">
+            <label class="form-label">
+              <i class="fa-solid fa-note-sticky me-1"></i>Description
+            </label>
+            <textarea name="description" class="form-control" rows="4"
+                      placeholder="Describe what you're using this resource for...">{{ booking.description }}</textarea>
+          </div>
+          <div class="d-flex gap-2 justify-content-end">
+            <a href="{% url 'my_bookings' %}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary">
+              <i class="fa-solid fa-floppy-disk me-2"></i>Save Changes
+            </button>
+          </div>
+        </form>
+
+      </div>
+    </div>
   </div>
-  <button type="submit" class="btn btn-primary">Save</button>
-</form>
+</div>
 
 {% endblock %}

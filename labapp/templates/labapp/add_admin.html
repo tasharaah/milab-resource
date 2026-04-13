@@ -1,40 +1,63 @@
 {% extends 'labapp/base.html' %}
-
-{% block title %}Add User | MI Lab{% endblock %}
+{% block title %}Admin Privileges | MI Lab{% endblock %}
 
 {% block content %}
-<h1 class="mb-4">Assign Admin Privileges</h1>
-<div class="row justify-content-center">
-    <div class="col-md-8 col-lg-6">
-        <div class="card shadow-sm">
-            <div class="card-body">
-                <form method="post">
-                    {% csrf_token %}
-                    {{ form.non_field_errors }}
-                    <div class="mb-3">
-                        <label for="id_user" class="form-label">Select User</label>
-                        {{ form.user }}
-                    </div>
-                    <div class="mb-3">
-                        <label for="id_make_admin" class="form-label">Grant Admin Privileges</label>
-                        {{ form.make_admin }}
-                    </div>
-                    {% if form.errors %}
-                        <div class="alert alert-danger">
-                            {{ form.errors }}
-                        </div>
-                    {% endif %}
-                    <button type="submit" class="btn btn-primary">Update</button>
-                </form>
-            </div>
-        </div>
-    </div>
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Admin Privileges</h1>
+    <p class="page-subtitle">Grant or revoke administrator access for users</p>
+  </div>
 </div>
+
+<div class="row justify-content-center">
+  <div class="col-lg-5 col-md-7">
+    <div class="card">
+      <div class="card-header">
+        <i class="fa-solid fa-shield-halved me-2" style="color:var(--primary);"></i>
+        Assign Admin Role
+      </div>
+      <div class="card-body" style="padding:1.75rem;">
+
+        {% if form.errors %}
+        <div class="alert alert-danger mb-3">{{ form.errors }}</div>
+        {% endif %}
+
+        <form method="post">
+          {% csrf_token %}
+          {{ form.non_field_errors }}
+
+          <div class="mb-4">
+            <label for="id_user" class="form-label">
+              <i class="fa-solid fa-user me-1"></i>Select User
+            </label>
+            {{ form.user }}
+          </div>
+
+          <div class="mb-5" style="padding:1rem; background:var(--warning-light); border-radius:var(--radius); border:1px solid #fde68a;">
+            <label class="form-label d-flex align-items-center gap-2 mb-0" style="color:#92400E; cursor:pointer;">
+              {{ form.make_admin }}
+              <span style="font-size:.9rem; font-weight:500;">Grant Admin Privileges</span>
+            </label>
+            <p class="form-text mt-2" style="color:#B45309; margin:0;">
+              Admins can manage users, resources, and all bookings.
+            </p>
+          </div>
+
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="fa-solid fa-floppy-disk me-2"></i>Update Privileges
+          </button>
+        </form>
+
+      </div>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
 <script>
-// Automatically check or uncheck the admin checkbox based on the selected user.
 document.addEventListener('DOMContentLoaded', function() {
   const adminStatus = {{ admin_statuses_json|safe }};
   const userSelect = document.getElementById('id_user');
@@ -45,7 +68,6 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   if (userSelect && adminCheckbox) {
     userSelect.addEventListener('change', updateCheckbox);
-    // Initialise on page load
     updateCheckbox();
   }
 });

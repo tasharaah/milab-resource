@@ -1,42 +1,64 @@
 {% extends 'labapp/base.html' %}
-
 {% block title %}{{ title }} | MI Lab{% endblock %}
 
 {% block content %}
-<h1 class="mb-4">{{ title }}</h1>
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ title }}</h1>
+    <p class="page-subtitle">All registered lab members in this category</p>
+  </div>
+</div>
 
 {% if users %}
-<div class="table-responsive">
-  <table class="table table-striped align-middle">
-    <thead>
-      <tr>
-        <th scope="col">Username</th>
-        <th scope="col">Full Name</th>
-        <th scope="col">Email</th>
-        <th scope="col">Role</th>
-        <th scope="col">Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for u in users %}
-      <tr>
-        <td>{{ u.username }}</td>
-        <td>{{ u.get_full_name|default:u.username }}</td>
-        <td>{{ u.email }}</td>
-        <td>{{ u.role }}</td>
-        <td>
-          <form method="post" action="{% url 'delete_ra' u.id %}" onsubmit="return confirm('Are you sure you want to delete this user?');">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-sm btn-danger">Delete</button>
-          </form>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+<div class="data-table-wrap">
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Username</th>
+          <th>Full Name</th>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td style="font-weight:600; color:var(--text-primary);">{{ u.username }}</td>
+          <td>{{ u.get_full_name|default:u.username }}</td>
+          <td style="font-size:.82rem; color:var(--text-secondary);">{{ u.email }}</td>
+          <td>
+            <span class="badge
+              {% if u.role == 'Faculty' %}bg-primary
+              {% elif u.role == 'RA' %}bg-info
+              {% else %}bg-secondary{% endif %}">
+              {{ u.role }}
+            </span>
+          </td>
+          <td>
+            <form method="post" action="{% url 'delete_ra' u.id %}"
+                  onsubmit="return confirm('Delete {{ u.username }}? This cannot be undone.');">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm btn-danger">
+                <i class="fa-solid fa-trash me-1"></i>Delete
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </div>
 {% else %}
-<p>No users found.</p>
+<div class="card">
+  <div class="empty-state">
+    <i class="fa-solid fa-users"></i>
+    <p>No users found.</p>
+  </div>
+</div>
 {% endif %}
 
 {% endblock %}

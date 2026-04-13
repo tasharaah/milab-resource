@@ -1,39 +1,72 @@
 {% extends 'labapp/base.html' %}
-
 {% block title %}All Resources | MI Lab{% endblock %}
 
 {% block content %}
-<h1 class="mb-4">All Resources</h1>
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">All Resources</h1>
+    <p class="page-subtitle">Complete inventory of lab computing resources</p>
+  </div>
+  <a href="{% url 'available_resources' %}" class="btn btn-primary">
+    <i class="fa-solid fa-calendar-plus me-2"></i>Book a Resource
+  </a>
+</div>
 
 {% if resources %}
-<div class="table-responsive">
-  <table class="table table-striped align-middle">
-    <thead>
-      <tr>
-        <th scope="col">Name</th>
-        <th scope="col">Type</th>
-        <th scope="col">Code</th>
-        <th scope="col">GPU</th>
-        <th scope="col">Status</th>
-        <th scope="col">Description</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for r in resources %}
-      <tr>
-        <td>{{ r.name }}</td>
-        <td>{{ r.get_resource_type_display }}</td>
-        <td>{{ r.computer_code|default:'—' }}</td>
-        <td>{{ r.gpu|default:'—' }}</td>
-        <td>{{ r.get_status_display }}</td>
-        <td>{{ r.description|default:'—' }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+<div class="data-table-wrap">
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Code</th>
+          <th>GPU</th>
+          <th>Status</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in resources %}
+        <tr>
+          <td style="font-weight:600; color:var(--text-primary);">{{ r.name }}</td>
+          <td>{{ r.get_resource_type_display }}</td>
+          <td style="font-size:.82rem; color:var(--text-muted);">{{ r.computer_code|default:'—' }}</td>
+          <td>
+            {% if r.gpu %}
+              <span class="badge bg-info">{{ r.gpu }}</span>
+            {% else %}
+              <span style="color:var(--text-muted);">—</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if r.status == 'OK' %}
+              <span class="badge bg-success">
+                <i class="fa-solid fa-circle-dot me-1" style="font-size:.6rem;"></i>OK
+              </span>
+            {% elif r.status == 'MAINTENANCE' %}
+              <span class="badge bg-warning">Maintenance</span>
+            {% else %}
+              <span class="badge bg-secondary">Disabled</span>
+            {% endif %}
+          </td>
+          <td style="color:var(--text-muted); font-size:.85rem; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+            {{ r.description|default:'—' }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </div>
 {% else %}
-<p>No resources found.</p>
+<div class="card">
+  <div class="empty-state">
+    <i class="fa-solid fa-server"></i>
+    <p>No resources found.</p>
+  </div>
+</div>
 {% endif %}
 
 {% endblock %}

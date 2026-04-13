@@ -1,38 +1,67 @@
 {% extends 'labapp/base.html' %}
-
 {% block title %}Registration Requests | MI Lab{% endblock %}
 
 {% block content %}
-<h1 class="mb-4">Pending Registration Requests</h1>
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Registration Requests</h1>
+    <p class="page-subtitle">Review and approve pending account requests</p>
+  </div>
+  {% if pending_requests %}
+  <span class="badge bg-warning" style="font-size:.85rem; padding:.45em .9em; border-radius:999px;">
+    <i class="fa-solid fa-clock me-1"></i>{{ pending_requests|length }} Pending
+  </span>
+  {% endif %}
+</div>
+
 {% if pending_requests %}
-<div class="table-responsive">
-    <table class="table table-striped align-middle">
-        <thead>
-            <tr>
-                <th>Username</th>
-                <th>Email</th>
-                <th>Name</th>
-                <th>Submitted</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for req in pending_requests %}
-            <tr>
-                <td>{{ req.username }}</td>
-                <td>{{ req.email }}</td>
-                <td>{{ req.first_name }} {{ req.last_name }}</td>
-                <td>{{ req.created_at|date:'d M, Y h:i A' }}</td>
-                <td>
-                    <a href="{% url 'approve_registration' req.id %}" class="btn btn-sm btn-success me-2" onclick="return confirm('Approve this registration request?');">Approve</a>
-                    <a href="{% url 'reject_registration' req.id %}" class="btn btn-sm btn-danger" onclick="return confirm('Reject this registration request?');">Reject</a>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
+<div class="data-table-wrap">
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Username</th>
+          <th>Full Name</th>
+          <th>Email</th>
+          <th>Submitted</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for req in pending_requests %}
+        <tr>
+          <td style="font-weight:600; color:var(--text-primary);">{{ req.username }}</td>
+          <td>{{ req.first_name }} {{ req.last_name }}</td>
+          <td style="font-size:.82rem; color:var(--text-secondary);">{{ req.email }}</td>
+          <td style="font-size:.82rem; color:var(--text-muted);">{{ req.created_at|date:'d M, Y h:i A' }}</td>
+          <td>
+            <div class="d-flex gap-2">
+              <a href="{% url 'approve_registration' req.id %}"
+                 class="btn btn-sm btn-success"
+                 onclick="return confirm('Approve this registration request for {{ req.username }}?');">
+                <i class="fa-solid fa-check me-1"></i>Approve
+              </a>
+              <a href="{% url 'reject_registration' req.id %}"
+                 class="btn btn-sm btn-danger"
+                 onclick="return confirm('Reject this registration request for {{ req.username }}?');">
+                <i class="fa-solid fa-xmark me-1"></i>Reject
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
     </table>
+  </div>
 </div>
 {% else %}
-<p>There are no pending registration requests at the moment.</p>
+<div class="card">
+  <div class="empty-state">
+    <i class="fa-solid fa-circle-check" style="color:var(--success);"></i>
+    <p>No pending registration requests. You're all caught up!</p>
+  </div>
+</div>
 {% endif %}
+
 {% endblock %}
