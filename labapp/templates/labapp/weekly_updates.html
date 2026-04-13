@@ -1,36 +1,62 @@
 {% extends 'labapp/base.html' %}
-
 {% block title %}Weekly Updates | MI Lab{% endblock %}
 
 {% block content %}
-<h1 class="mb-4">Weekly Updates</h1>
 
-{% if user.is_authenticated and not user.is_staff and not user.is_superuser and user.role != 'Faculty' %}
-<div class="mb-3">
-  <a href="{% url 'add_weekly_update' %}" class="btn btn-success">Submit Update</a>
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Weekly Updates</h1>
+    <p class="page-subtitle">Project progress reports from the team</p>
+  </div>
+  {% if user.is_authenticated and not user.is_staff and not user.is_superuser and user.role != 'Faculty' %}
+  <a href="{% url 'add_weekly_update' %}" class="btn btn-primary">
+    <i class="fa-solid fa-plus me-2"></i>Submit Update
+  </a>
+  {% endif %}
 </div>
-{% endif %}
 
 {% if updates %}
+  <div style="display:flex; flex-direction:column; gap:1rem;">
   {% for update in updates %}
-  <div class="card mb-4 shadow-sm">
-    <div class="card-body">
-      <h5 class="card-title mb-1">{{ update.project_name }}</h5>
-      {% if update.title %}<h6 class="card-subtitle mb-2 text-muted">{{ update.title }}</h6>{% endif %}
-      <div class="mb-2 text-muted" style="font-size:.85rem;">
-        {% if user.is_staff or user.is_superuser or user.role == 'Faculty' %}
-          <strong>By:</strong> {{ update.user.get_full_name|default:update.user.username }} |
-        {% endif %}
-        <strong>Date:</strong> {{ update.created_at|date:'d M Y, h:i A' }}
+  <div class="content-card">
+    <div class="content-card-header">
+      <div style="display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:.5rem;">
+        <div>
+          <h2 class="content-card-title">{{ update.project_name }}</h2>
+          {% if update.title %}
+          <p style="font-size:.88rem; color:var(--text-muted); margin:.15rem 0 0; font-style:italic;">
+            {{ update.title }}
+          </p>
+          {% endif %}
+        </div>
+        <span style="background:var(--primary-light); color:var(--primary-dark);
+                     border-radius:999px; font-size:.72rem; font-weight:600;
+                     padding:.25rem .7rem; white-space:nowrap;">
+          {{ update.created_at|date:'d M Y' }}
+        </span>
       </div>
-      <div class="card-text">
+      <div class="content-card-meta mt-2">
+        {% if user.is_staff or user.is_superuser or user.role == 'Faculty' %}
+        <span><i class="fa-solid fa-user"></i>{{ update.user.get_full_name|default:update.user.username }}</span>
+        {% endif %}
+        <span><i class="fa-solid fa-clock"></i>{{ update.created_at|date:'h:i A' }}</span>
+      </div>
+    </div>
+    <div class="content-card-body">
+      <div style="line-height:1.75; color:var(--text-secondary);">
         {{ update.content|safe }}
       </div>
     </div>
   </div>
   {% endfor %}
+  </div>
 {% else %}
-  <p>No updates submitted yet.</p>
+<div class="card">
+  <div class="empty-state">
+    <i class="fa-solid fa-calendar-week"></i>
+    <p>No updates submitted yet.</p>
+  </div>
+</div>
 {% endif %}
 
 {% endblock %}

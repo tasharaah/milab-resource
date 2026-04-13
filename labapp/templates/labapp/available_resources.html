@@ -1,42 +1,73 @@
 {% extends 'labapp/base.html' %}
-
 {% block title %}Available Resources | MI Lab{% endblock %}
 
 {% block content %}
-<h1 class="mb-4">Available Resources</h1>
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Available Resources</h1>
+    <p class="page-subtitle">Browse and book lab resources</p>
+  </div>
+</div>
 
 {% if resources %}
-<div class="table-responsive">
-  <table class="table table-striped align-middle">
-    <thead>
-      <tr>
-        <th scope="col">Name</th>
-        <th scope="col">Type</th>
-        <th scope="col">GPU</th>
-        <th scope="col">Action</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for r in resources %}
-      <tr>
-        <td>{{ r.name }}</td>
-        <td>{{ r.get_resource_type_display }}</td>
-        <td>{{ r.gpu|default:'—' }}</td>
-        <td>
-          {# Disable booking when the resource is not OK or currently busy #}
-          {% if r.status != 'OK' or r.id in busy_ids %}
-            <button class="btn btn-sm btn-secondary" disabled>Unavailable</button>
-          {% else %}
-            <a href="{% url 'create_booking' %}?resource={{ r.id }}" class="btn btn-sm btn-primary">Book</a>
-          {% endif %}
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+<div class="data-table-wrap">
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>GPU</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in resources %}
+        <tr>
+          <td style="font-weight:600; color:var(--text-primary);">{{ r.name }}</td>
+          <td>{{ r.get_resource_type_display }}</td>
+          <td>
+            {% if r.gpu %}
+              <span class="badge bg-info">{{ r.gpu }}</span>
+            {% else %}
+              <span style="color:var(--text-muted);">—</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if r.status == 'OK' and r.id not in busy_ids %}
+              <span class="badge bg-success"><i class="fa-solid fa-circle-dot me-1" style="font-size:.6rem;"></i>Available</span>
+            {% elif r.status == 'MAINTENANCE' %}
+              <span class="badge bg-warning">Maintenance</span>
+            {% elif r.id in busy_ids %}
+              <span class="badge bg-secondary">In Use</span>
+            {% else %}
+              <span class="badge bg-secondary">Unavailable</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if r.status != 'OK' or r.id in busy_ids %}
+              <button class="btn btn-sm btn-secondary" disabled>Unavailable</button>
+            {% else %}
+              <a href="{% url 'create_booking' %}?resource={{ r.id }}" class="btn btn-sm btn-primary">
+                <i class="fa-solid fa-calendar-plus me-1"></i>Book
+              </a>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </div>
 {% else %}
-<p>No resources available.</p>
+<div class="card">
+  <div class="empty-state">
+    <i class="fa-solid fa-server"></i>
+    <p>No resources found.</p>
+  </div>
+</div>
 {% endif %}
 
 {% endblock %}

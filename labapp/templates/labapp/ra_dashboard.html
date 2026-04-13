@@ -1,102 +1,116 @@
 {% extends 'labapp/base.html' %}
-
 {% block title %}
-{% if user.role == 'Intern' %}Intern Dashboard{% elif user.role == 'Student' %}Student Dashboard{% elif user.role == 'RA' %}Research Assistant Dashboard{% else %}Dashboard{% endif %} | MI Lab
+{% if user.role == 'Intern' %}Intern{% elif user.role == 'Student' %}Student{% elif user.role == 'RA' %}RA{% else %}My{% endif %} Dashboard | MI Lab
 {% endblock %}
 
 {% block content %}
-<h1 class="mb-4">
-  {% if user.role == 'Intern' %}
-    Intern Dashboard
-  {% elif user.role == 'Student' %}
-    Student Dashboard
-  {% elif user.role == 'RA' %}
-    Research Assistant Dashboard
-  {% else %}
-    Dashboard
-  {% endif %}
-</h1>
 
-<div class="row">
-    <div class="col-md-4 mb-3">
-        <a href="{% url 'list_resources' %}" class="text-decoration-none text-dark">
-          <div class="stat-card h-100">
-              <div class="stat-top">
-                  <div class="stat-icon bg-primary"><i class="fa fa-desktop"></i></div>
-                  <div>
-                      <div class="stat-label">Total Resources</div>
-                      <div class="stat-value">{{ total_resources }}</div>
-                  </div>
-              </div>
-          </div>
-        </a>
-    </div>
-    <div class="col-md-4 mb-3">
-        <a href="{% url 'available_resources' %}" class="text-decoration-none text-dark">
-          <div class="stat-card h-100">
-              <div class="stat-top">
-                  <div class="stat-icon bg-success"><i class="fa fa-check-circle"></i></div>
-                  <div>
-                      <div class="stat-label">Available Resources</div>
-                      <div class="stat-value">{{ available_resources }}</div>
-                  </div>
-              </div>
-          </div>
-        </a>
-    </div>
-    <div class="col-md-4 mb-3">
-        <a href="{% url 'my_bookings' %}" class="text-decoration-none text-dark">
-          <div class="stat-card h-100">
-              <div class="stat-top">
-                  <div class="stat-icon bg-warning"><i class="fa fa-clock"></i></div>
-                  <div>
-                      <div class="stat-label">Active Bookings</div>
-                      <div class="stat-value">{{ my_active_bookings|length }}</div>
-                  </div>
-              </div>
-          </div>
-        </a>
-    </div>
+<div class="page-header">
+  <div>
+    <h1 class="page-title">
+      {% if user.role == 'Intern' %}Intern Dashboard
+      {% elif user.role == 'Student' %}Student Dashboard
+      {% elif user.role == 'RA' %}Research Assistant Dashboard
+      {% else %}Dashboard{% endif %}
+    </h1>
+    <p class="page-subtitle">Welcome back, {{ user.get_full_name|default:user.username }}</p>
+  </div>
+  <a href="{% url 'create_booking' %}" class="btn btn-primary">
+    <i class="fa-solid fa-plus me-2"></i>New Booking
+  </a>
 </div>
 
-<div class="row mt-4">
-    <div class="col-12">
-        <h3>Your Active Bookings</h3>
-        {% if my_active_bookings %}
-        <div class="table-responsive">
-            <table class="table table-striped align-middle">
-                <thead>
-                    <tr>
-                        <th scope="col">Resource</th>
-                        <th scope="col">GPU</th>
-                        <th scope="col">Software</th>
-                        <th scope="col">Start</th>
-                        <th scope="col">End</th>
-                        <th scope="col">Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for booking in my_active_bookings %}
-                    <tr>
-                        <td>{{ booking.resource.name }}</td>
-                        <td>{{ booking.resource.gpu }}</td>
-                        <td>{{ booking.software|default:'—' }}</td>
-                        <td>{{ booking.start_time|date:'d M, Y h:i A' }}</td>
-                        <td>{{ booking.end_time|date:'d M, Y h:i A' }}</td>
-                        <td>
-                            <a href="{% url 'release_booking' booking.id %}" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to release this resource?');">Release</a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+<!-- Stat Cards -->
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <a href="{% url 'list_resources' %}" class="text-decoration-none">
+      <div class="stat-card">
+        <div class="stat-top">
+          <div class="stat-icon bg-primary"><i class="fa fa-server"></i></div>
+          <div>
+            <div class="stat-label">Total Resources</div>
+            <div class="stat-value">{{ total_resources }}</div>
+          </div>
         </div>
-        {% else %}
-        <p>You have no active bookings. <a href="{% url 'create_booking' %}">Make a new booking</a>.</p>
-        {% endif %}
-    </div>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-4">
+    <a href="{% url 'available_resources' %}" class="text-decoration-none">
+      <div class="stat-card">
+        <div class="stat-top">
+          <div class="stat-icon bg-success"><i class="fa fa-circle-check"></i></div>
+          <div>
+            <div class="stat-label">Available Now</div>
+            <div class="stat-value">{{ available_resources }}</div>
+          </div>
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-4">
+    <a href="{% url 'my_bookings' %}" class="text-decoration-none">
+      <div class="stat-card">
+        <div class="stat-top">
+          <div class="stat-icon bg-warning"><i class="fa fa-bolt"></i></div>
+          <div>
+            <div class="stat-label">My Active</div>
+            <div class="stat-value">{{ my_active_bookings|length }}</div>
+          </div>
+        </div>
+      </div>
+    </a>
+  </div>
 </div>
 
-{% comment %} Recent Past Bookings section removed as per updated requirements {% endcomment %}
+<!-- Active Bookings Table -->
+<div class="section-title"><i class="fa-solid fa-bolt text-warning"></i> Your Active Bookings</div>
+
+{% if my_active_bookings %}
+<div class="data-table-wrap mb-4">
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Resource</th>
+          <th>GPU</th>
+          <th>Software</th>
+          <th>Start</th>
+          <th>End</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for booking in my_active_bookings %}
+        <tr>
+          <td><strong style="color:var(--text-primary);">{{ booking.resource.name }}</strong></td>
+          <td><span class="badge bg-info">{{ booking.resource.gpu|default:'—' }}</span></td>
+          <td>{{ booking.software|default:'—' }}</td>
+          <td style="color:var(--text-muted); font-size:.82rem;">{{ booking.start_time|date:'d M, Y h:i A' }}</td>
+          <td style="color:var(--text-muted); font-size:.82rem;">{{ booking.end_time|date:'d M, Y h:i A' }}</td>
+          <td>
+            <a href="{% url 'release_booking' booking.id %}"
+               class="btn btn-sm btn-danger"
+               onclick="return confirm('Are you sure you want to release this resource?');">
+              <i class="fa-solid fa-stop me-1"></i>Release
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="card mb-4">
+  <div class="empty-state">
+    <i class="fa-regular fa-calendar-xmark"></i>
+    <p>No active bookings right now.<br>
+    <a href="{% url 'create_booking' %}" class="btn btn-primary btn-sm mt-3">
+      <i class="fa-solid fa-plus me-1"></i>Make a Booking
+    </a></p>
+  </div>
+</div>
+{% endif %}
 
 {% endblock %}

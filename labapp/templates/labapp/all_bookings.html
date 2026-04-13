@@ -1,60 +1,79 @@
 {% extends 'labapp/base.html' %}
-
 {% block title %}All Bookings | MI Lab{% endblock %}
 
 {% block content %}
-<h1 class="mb-4">All Bookings</h1>
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">All Bookings</h1>
+    <p class="page-subtitle">Complete booking history across all users</p>
+  </div>
+</div>
 
 {% if bookings %}
-<div class="table-responsive">
-    <table class="table table-striped align-middle">
-        <thead>
-            <tr>
-                <th>User</th>
-                <th>Resource</th>
-                <th>Software</th>
-                <th>Start Time</th>
-                <th>End Time</th>
-                <th>Status</th>
-                <th>Description</th>
-                <th>Released At</th>
-                {% if user.is_staff or user.is_superuser or user.role == 'Faculty' %}
-                <th>Action</th>
-                {% endif %}
-            </tr>
-        </thead>
-        <tbody>
-            {% for booking in bookings %}
-            <tr>
-                <td>{{ booking.user.username }}</td>
-                <td>{{ booking.resource.name }}</td>
-                <td>{{ booking.software|default:'—' }}</td>
-                <td>{{ booking.start_time|date:'d M, Y h:i A' }}</td>
-                <td>{{ booking.end_time|date:'d M, Y h:i A' }}</td>
-                <td>
-                    {% if booking.currently_active %}
-                        <span class="badge bg-success">Active</span>
-                    {% else %}
-                        <span class="badge bg-secondary">Inactive</span>
-                    {% endif %}
-                </td>
-                <td>{{ booking.description|default:'—' }}</td>
-                <td>{{ booking.released_at|date:'d M, Y h:i A'|default:'—' }}</td>
-                {% if user.is_staff or user.is_superuser or user.role == 'Faculty' %}
-                <td>
-                    {% if booking.currently_active %}
-                    <a href="{% url 'release_booking' booking.id %}?next=all_bookings" class="btn btn-sm btn-danger" onclick="return confirm('End this booking?');">End</a>
-                    {% else %}
-                    —
-                    {% endif %}
-                </td>
-                {% endif %}
-            </tr>
-            {% endfor %}
-        </tbody>
+<div class="data-table-wrap">
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>Resource</th>
+          <th>Software</th>
+          <th>Start Time</th>
+          <th>End Time</th>
+          <th>Status</th>
+          <th>Description</th>
+          <th>Released At</th>
+          {% if user.is_staff or user.is_superuser or user.role == 'Faculty' %}
+          <th>Action</th>
+          {% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for booking in bookings %}
+        <tr>
+          <td style="font-weight:500; color:var(--text-primary);">{{ booking.user.username }}</td>
+          <td>{{ booking.resource.name }}</td>
+          <td>{{ booking.software|default:'—' }}</td>
+          <td style="font-size:.82rem; color:var(--text-muted);">{{ booking.start_time|date:'d M, Y h:i A' }}</td>
+          <td style="font-size:.82rem; color:var(--text-muted);">{{ booking.end_time|date:'d M, Y h:i A' }}</td>
+          <td>
+            {% if booking.currently_active %}
+              <span class="badge bg-success"><i class="fa-solid fa-circle-dot me-1" style="font-size:.6rem;"></i>Active</span>
+            {% else %}
+              <span class="badge bg-secondary">Inactive</span>
+            {% endif %}
+          </td>
+          <td style="color:var(--text-muted); max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+            {{ booking.description|default:'—' }}
+          </td>
+          <td style="font-size:.82rem; color:var(--text-muted);">{{ booking.released_at|date:'d M, Y h:i A'|default:'—' }}</td>
+          {% if user.is_staff or user.is_superuser or user.role == 'Faculty' %}
+          <td>
+            {% if booking.currently_active %}
+            <a href="{% url 'release_booking' booking.id %}?next=all_bookings"
+               class="btn btn-sm btn-danger"
+               onclick="return confirm('End this booking?');">
+              <i class="fa-solid fa-stop me-1"></i>End
+            </a>
+            {% else %}
+            <span style="color:var(--text-muted);">—</span>
+            {% endif %}
+          </td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
     </table>
+  </div>
 </div>
 {% else %}
-<p>No bookings found.</p>
+<div class="card">
+  <div class="empty-state">
+    <i class="fa-regular fa-calendar-xmark"></i>
+    <p>No bookings found.</p>
+  </div>
+</div>
 {% endif %}
+
 {% endblock %}

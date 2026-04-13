@@ -1,53 +1,95 @@
 {% extends 'labapp/base.html' %}
-
 {% block title %}New Booking | MI Lab{% endblock %}
 
 {% block content %}
-<h1 class="mb-4">Make a New Booking</h1>
-<div class="row justify-content-center">
-    <div class="col-md-8 col-lg-6">
-        <div class="card shadow-sm">
-            <div class="card-body">
-                <form method="post">
-                    {% csrf_token %}
-                    {{ form.non_field_errors }}
-                    <div class="mb-3">
-                        <label for="id_resource" class="form-label">Resource</label>
-                        {{ form.resource }}
-                    </div>
-                    {{ form.start_time }}
-                    <div class="mb-3">
-                        <label for="id_end_time" class="form-label">End Time</label>
-                        {{ form.end_time }}
-                    </div>
-                    <div class="mb-3">
-                        <label for="id_software" class="form-label">Software/Tool</label>
-                        {{ form.software }}
-                    </div>
-                    <div class="mb-3">
-                        <label for="id_project_name" class="form-label">Project Name (optional)</label>
-                        {{ form.project_name }}
-                    </div>
-                    <div class="mb-3">
-                        <label for="id_description" class="form-label">Description (optional)</label>
-                        {{ form.description }}
-                    </div>
-                    {% if user.is_staff or user.is_superuser or user.role == 'Faculty' %}
-                    <div class="mb-3">
-                        <label for="id_assignee" class="form-label">Assign To (optional)</label>
-                        {{ form.assignee }}
-                        <small class="form-text text-muted">Choose a user to assign this booking to.</small>
-                    </div>
-                    {% endif %}
-                    {% if form.errors %}
-                        <div class="alert alert-danger">
-                            {{ form.errors }}
-                        </div>
-                    {% endif %}
-                    <button type="submit" class="btn btn-primary">Submit Booking</button>
-                </form>
-            </div>
-        </div>
-    </div>
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">New Booking</h1>
+    <p class="page-subtitle">Reserve a lab resource for your project</p>
+  </div>
+  <a href="{% url 'available_resources' %}" class="btn btn-secondary">
+    <i class="fa-solid fa-arrow-left me-2"></i>See Available Resources
+  </a>
 </div>
+
+<div class="row justify-content-center">
+  <div class="col-lg-7 col-md-9">
+    <div class="card">
+      <div class="card-body" style="padding:2rem;">
+
+        {% if form.errors %}
+        <div class="alert alert-danger mb-4">{{ form.errors }}</div>
+        {% endif %}
+
+        <form method="post">
+          {% csrf_token %}
+          {{ form.non_field_errors }}
+
+          <div class="mb-4">
+            <label for="id_resource" class="form-label">
+              <i class="fa-solid fa-server me-1" style="color:var(--primary);"></i>Resource
+            </label>
+            {{ form.resource }}
+          </div>
+
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <label for="id_start_time" class="form-label">
+                <i class="fa-solid fa-play me-1" style="color:var(--success);"></i>Start Time
+              </label>
+              {{ form.start_time }}
+            </div>
+            <div class="col-md-6">
+              <label for="id_end_time" class="form-label">
+                <i class="fa-solid fa-stop me-1" style="color:var(--danger);"></i>End Time
+              </label>
+              {{ form.end_time }}
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label for="id_software" class="form-label">
+              <i class="fa-solid fa-code me-1" style="color:var(--accent);"></i>Software / Tool
+            </label>
+            {{ form.software }}
+          </div>
+
+          <div class="mb-4">
+            <label for="id_project_name" class="form-label">
+              <i class="fa-solid fa-folder me-1" style="color:var(--warning);"></i>Project Name
+              <span style="font-weight:400; color:var(--text-muted);">(optional)</span>
+            </label>
+            {{ form.project_name }}
+          </div>
+
+          <div class="mb-4">
+            <label for="id_description" class="form-label">
+              <i class="fa-solid fa-note-sticky me-1" style="color:var(--text-muted);"></i>Description
+              <span style="font-weight:400; color:var(--text-muted);">(optional)</span>
+            </label>
+            {{ form.description }}
+          </div>
+
+          {% if user.is_staff or user.is_superuser or user.role == 'Faculty' %}
+          <div class="mb-4" style="padding:1rem; background:var(--primary-light); border-radius:var(--radius); border:1px solid #c7d2fe;">
+            <label for="id_assignee" class="form-label" style="color:var(--primary-dark);">
+              <i class="fa-solid fa-user-tag me-1"></i>Assign To
+              <span style="font-weight:400; color:var(--primary);">(optional)</span>
+            </label>
+            {{ form.assignee }}
+            <p class="form-text">Assign this booking to another user.</p>
+          </div>
+          {% endif %}
+
+          <button type="submit" class="btn btn-primary btn-lg w-100">
+            <i class="fa-solid fa-calendar-check me-2"></i>Submit Booking
+          </button>
+        </form>
+
+      </div>
+    </div>
+  </div>
+</div>
+
 {% endblock %}

@@ -7,109 +7,687 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>{% block title %}MI Lab Resource Manager{% endblock %}</title>
 
+  <!-- Google Fonts: Outfit (headings) + DM Sans (body) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
+
   <!-- Bootstrap 5 CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
   <!-- Font Awesome Icons -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 
-  <!-- App CSS (optional if you already have) -->
+  <!-- App CSS -->
   <link rel="stylesheet" href="{% static 'labapp/css/styles.css' %}">
 
   <!-- PWA -->
   <link rel="manifest" href="{% static 'manifest.json' %}">
-  <meta name="theme-color" content="#2f80ed">
+  <meta name="theme-color" content="#4F46E5">
 
   <style>
-    :root{
-      --nsu-sky:#2f80ed;
-      --nsu-sky-2:#56ccf2;
-      --nsu-navy:#0b2a4a;
-      --bg:#f7fbff;
-      --card:#ffffff;
-      --muted:#6b7a90;
-      --border:#e6eef7;
-      --shadow: 0 14px 35px rgba(12, 44, 74, .12);
-      --radius: 18px;
+    /* =========================================================
+       DESIGN TOKENS
+    ========================================================= */
+    :root {
+      --primary:        #4F46E5;
+      --primary-dark:   #3730A3;
+      --primary-light:  #EEF2FF;
+      --primary-glow:   rgba(79,70,229,.15);
+
+      --accent:         #06B6D4;
+      --success:        #10B981;
+      --success-light:  #ECFDF5;
+      --warning:        #F59E0B;
+      --warning-light:  #FFFBEB;
+      --danger:         #EF4444;
+      --danger-light:   #FEF2F2;
+      --info:           #3B82F6;
+      --info-light:     #EFF6FF;
+
+      --nav-bg:         #0F172A;
+      --nav-border:     rgba(255,255,255,.07);
+      --nav-text:       rgba(255,255,255,.72);
+      --nav-text-hover: #ffffff;
+      --nav-item-hover: rgba(255,255,255,.07);
+      --nav-item-active:rgba(79,70,229,.35);
+
+      --bg:             #F1F5F9;
+      --surface:        #FFFFFF;
+      --surface-2:      #F8FAFC;
+
+      --text-primary:   #0F172A;
+      --text-secondary: #475569;
+      --text-muted:     #94A3B8;
+
+      --border:         #E2E8F0;
+      --border-focus:   var(--primary);
+
+      --shadow-xs:  0 1px 2px rgba(0,0,0,.05);
+      --shadow-sm:  0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+      --shadow-md:  0 4px 16px rgba(0,0,0,.08);
+      --shadow-lg:  0 10px 40px rgba(15,23,42,.12);
+      --shadow-xl:  0 20px 60px rgba(15,23,42,.16);
+
+      --radius-sm:  6px;
+      --radius:     10px;
+      --radius-lg:  14px;
+      --radius-xl:  20px;
+
+      --transition: .18s cubic-bezier(.4,0,.2,1);
     }
 
-    body{
-      min-height: 100vh;
+    /* =========================================================
+       BASE
+    ========================================================= */
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      font-family: 'DM Sans', system-ui, sans-serif;
+      font-size: 15px;
+      line-height: 1.6;
+      color: var(--text-primary);
       background: var(--bg);
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      color: var(--nsu-navy);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
     }
 
-    /* Topbar */
-    .topbar{
-      background: linear-gradient(90deg, var(--nsu-sky), var(--nsu-sky-2));
-      color: #fff;
-      border-bottom: 1px solid rgba(255,255,255,.25);
-    }
-    .brand-wrap{ display:flex; align-items:center; gap:16px; }
-    .brand-logo{
-      width:72px; height:72px;
-      background:transparent; border:none; border-radius:0;
-      display:flex; align-items:center; justify-content:center;
-      overflow:visible;
-    }
-    .brand-logo img{ width:72px; height:72px; object-fit:contain; display:block; }
-
-    .brand-title{
-      font-weight: 900;
-      letter-spacing: .2px;
-      margin: 0;
-      font-size: 1.35rem;
-      line-height: 1.05;
-    }
-    .brand-sub{
-      margin: .25rem 0 0;
-      opacity: .95;
-      font-size: 1rem;
-      line-height: 1.05;
-    }
-
-    .pill{
-      background: rgba(255,255,255,.18);
-      border: 1px solid rgba(255,255,255,.25);
-      color:#fff;
-      border-radius: 999px;
-      padding: .35rem .75rem;
+    h1, h2, h3, h4, h5, h6,
+    .h1, .h2, .h3, .h4, .h5, .h6 {
+      font-family: 'Outfit', system-ui, sans-serif;
       font-weight: 700;
-      font-size: .9rem;
+      line-height: 1.25;
+      color: var(--text-primary);
+    }
+
+    a { color: var(--primary); text-decoration: none; transition: color var(--transition); }
+    a:hover { color: var(--primary-dark); }
+
+    /* =========================================================
+       TOPBAR / NAV
+    ========================================================= */
+    .topbar {
+      background: var(--nav-bg);
+      border-bottom: 1px solid var(--nav-border);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+
+    .topbar-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: .75rem 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    /* Brand */
+    .brand-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+    }
+    .brand-logo {
+      width: 40px; height: 40px;
+      background: rgba(255,255,255,.08);
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .brand-logo img { width: 36px; height: 36px; object-fit: contain; }
+    .brand-text { display: flex; flex-direction: column; }
+    .brand-title {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+      font-size: .95rem;
+      color: #fff;
+      letter-spacing: -.01em;
+      line-height: 1.1;
+    }
+    .brand-sub {
+      font-size: .72rem;
+      color: rgba(255,255,255,.5);
+      font-weight: 400;
+      letter-spacing: .03em;
+      text-transform: uppercase;
+      line-height: 1.2;
+    }
+
+    /* User area chips */
+    .user-chips { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: .4rem;
+      padding: .3rem .7rem;
+      border-radius: 999px;
+      font-size: .8rem;
+      font-weight: 500;
+      letter-spacing: .01em;
+      white-space: nowrap;
+      transition: all var(--transition);
+    }
+    .chip-ghost {
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.12);
+      color: rgba(255,255,255,.8);
+    }
+    .chip-ghost:hover {
+      background: rgba(255,255,255,.14);
+      color: #fff;
+    }
+    button.chip { cursor: pointer; }
+    .chip-danger {
+      background: rgba(239,68,68,.12);
+      border: 1px solid rgba(239,68,68,.25);
+      color: #fca5a5;
+    }
+    .chip-danger:hover {
+      background: rgba(239,68,68,.22);
+      color: #fecaca;
+    }
+
+    /* Nav row */
+    .nav-row {
+      border-top: 1px solid var(--nav-border);
+      padding: .35rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: .25rem;
+      flex-wrap: wrap;
+    }
+
+    .nav-item-link {
       display: inline-flex;
       align-items: center;
       gap: .45rem;
+      padding: .35rem .7rem;
+      border-radius: var(--radius-sm);
+      font-size: .82rem;
+      font-weight: 500;
+      color: var(--nav-text);
+      text-decoration: none;
+      transition: background var(--transition), color var(--transition);
+      border: none;
+      background: transparent;
+      cursor: pointer;
       white-space: nowrap;
-      text-decoration: none;
     }
-    a.pill:hover{
-      background: rgba(255,255,255,.30);
-      border-color: rgba(255,255,255,.45);
-      text-decoration: none;
-      color:#fff;
+    .nav-item-link:hover,
+    .nav-item-link.show {
+      background: var(--nav-item-hover);
+      color: var(--nav-text-hover);
+    }
+    .nav-item-link.active {
+      background: var(--nav-item-active);
+      color: #c7d2fe;
+    }
+    .nav-item-link i { font-size: .78rem; opacity: .85; }
+
+    .nav-divider {
+      width: 1px;
+      height: 18px;
+      background: rgba(255,255,255,.1);
+      margin: 0 .25rem;
     }
 
-    /* Nav pills (links row) */
-    .navpills{
-      display:flex;
-      flex-wrap:wrap;
-      gap:.5rem;
+    /* Dropdowns */
+    .dropdown-menu {
+      background: #1E293B;
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-xl);
+      padding: .4rem;
+      min-width: 180px;
+      animation: dropIn .15s ease;
+    }
+    @keyframes dropIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .dropdown-item {
+      padding: .45rem .75rem;
+      border-radius: var(--radius-sm);
+      font-size: .83rem;
+      color: rgba(255,255,255,.75);
+      transition: background var(--transition), color var(--transition);
+    }
+    .dropdown-item:hover {
+      background: rgba(255,255,255,.07);
+      color: #fff;
+    }
+    .dropdown-item i { width: 16px; opacity: .7; }
+
+    /* =========================================================
+       PAGE CONTENT WRAPPER
+    ========================================================= */
+    .page-wrap {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 3rem;
     }
 
-    /* Messages */
-    .alert{
-      border-radius: 14px;
+    /* Page header */
+    .page-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 1.75rem;
+    }
+    .page-title {
+      font-size: 1.6rem;
+      font-weight: 800;
+      letter-spacing: -.02em;
+      margin: 0;
+    }
+    .page-subtitle {
+      font-size: .88rem;
+      color: var(--text-muted);
+      margin: .2rem 0 0;
+      font-weight: 400;
+    }
+
+    /* =========================================================
+       CARDS
+    ========================================================= */
+    .card {
+      background: var(--surface);
       border: 1px solid var(--border);
-      box-shadow: 0 6px 16px rgba(12,44,74,.06);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      transition: box-shadow var(--transition);
+    }
+    .card:hover { box-shadow: var(--shadow-md); }
+    .card-body { padding: 1.5rem; }
+    .card-header {
+      background: transparent;
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 1.5rem;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 600;
+      font-size: 1rem;
     }
 
-    /* Small helper */
-    .divider{
-      height:1px;
-      background: var(--border);
-      margin: 1.25rem 0;
+    /* =========================================================
+       STAT CARDS
+    ========================================================= */
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem 1.5rem;
+      box-shadow: var(--shadow-sm);
+      transition: transform var(--transition), box-shadow var(--transition);
+      height: 100%;
     }
+    a:has(.stat-card):hover .stat-card,
+    a .stat-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-md);
+    }
+    .stat-top { display: flex; align-items: center; gap: 1rem; }
+    .stat-icon {
+      width: 44px; height: 44px;
+      border-radius: var(--radius);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem;
+      color: #fff;
+      flex-shrink: 0;
+    }
+    .stat-icon.bg-primary  { background: linear-gradient(135deg, #6366F1, #4F46E5); }
+    .stat-icon.bg-success  { background: linear-gradient(135deg, #34D399, #10B981); }
+    .stat-icon.bg-warning  { background: linear-gradient(135deg, #FCD34D, #F59E0B); }
+    .stat-icon.bg-info     { background: linear-gradient(135deg, #60A5FA, #3B82F6); }
+    .stat-icon.bg-secondary{ background: linear-gradient(135deg, #94A3B8, #64748B); }
+    .stat-icon.bg-danger   { background: linear-gradient(135deg, #F87171, #EF4444); }
+
+    .stat-label {
+      font-size: .78rem;
+      font-weight: 600;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: .15rem;
+    }
+    .stat-value {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.9rem;
+      font-weight: 800;
+      letter-spacing: -.03em;
+      color: var(--text-primary);
+      line-height: 1;
+    }
+
+    /* =========================================================
+       TABLES
+    ========================================================= */
+    .data-table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+    .table {
+      margin: 0;
+      font-size: .875rem;
+    }
+    .table thead th {
+      background: var(--surface-2);
+      border-bottom: 1px solid var(--border);
+      border-top: none;
+      font-family: 'Outfit', sans-serif;
+      font-size: .72rem;
+      font-weight: 600;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      padding: .85rem 1rem;
+      white-space: nowrap;
+    }
+    .table tbody td {
+      border-color: var(--border);
+      padding: .85rem 1rem;
+      vertical-align: middle;
+      color: var(--text-secondary);
+    }
+    .table tbody tr {
+      transition: background var(--transition);
+    }
+    .table tbody tr:hover { background: var(--surface-2); }
+    .table-striped > tbody > tr:nth-of-type(odd) > td { background: transparent; }
+    .table-striped > tbody > tr:nth-of-type(even) > td { background: var(--surface-2); }
+
+    /* =========================================================
+       BADGES
+    ========================================================= */
+    .badge {
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 600;
+      font-size: .72rem;
+      padding: .3em .65em;
+      border-radius: 999px;
+    }
+    .badge.bg-success  { background: var(--success-light) !important; color: #065F46 !important; }
+    .badge.bg-secondary{ background: var(--surface-2) !important;     color: var(--text-muted) !important; border: 1px solid var(--border); }
+    .badge.bg-warning  { background: var(--warning-light) !important; color: #92400E !important; }
+    .badge.bg-danger   { background: var(--danger-light) !important;  color: #991B1B !important; }
+    .badge.bg-info     { background: var(--info-light) !important;    color: #1E40AF !important; }
+    .badge.bg-primary  { background: var(--primary-light) !important; color: var(--primary-dark) !important; }
+
+    /* =========================================================
+       BUTTONS
+    ========================================================= */
+    .btn {
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 600;
+      font-size: .84rem;
+      border-radius: var(--radius-sm);
+      padding: .45rem 1.1rem;
+      transition: all var(--transition);
+      border: 1px solid transparent;
+      letter-spacing: .01em;
+    }
+    .btn:active { transform: scale(.97); }
+
+    .btn-primary {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+      box-shadow: 0 1px 3px rgba(79,70,229,.3);
+    }
+    .btn-primary:hover {
+      background: var(--primary-dark);
+      border-color: var(--primary-dark);
+      box-shadow: 0 4px 12px rgba(79,70,229,.35);
+    }
+
+    .btn-success {
+      background: var(--success);
+      border-color: var(--success);
+      color: #fff;
+    }
+    .btn-success:hover { background: #059669; border-color: #059669; }
+
+    .btn-danger {
+      background: transparent;
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+    .btn-danger:hover { background: var(--danger); color: #fff; }
+
+    .btn-secondary {
+      background: var(--surface-2);
+      border-color: var(--border);
+      color: var(--text-secondary);
+    }
+    .btn-secondary:hover { background: var(--border); color: var(--text-primary); }
+
+    .btn-outline-primary {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+    .btn-outline-primary:hover {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .btn-sm { padding: .3rem .75rem; font-size: .78rem; }
+    .btn-lg { padding: .65rem 1.5rem; font-size: .95rem; }
+
+    /* =========================================================
+       FORMS
+    ========================================================= */
+    .form-label {
+      font-size: .82rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: .4rem;
+      letter-spacing: .01em;
+    }
+    .form-control, .form-select {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: .875rem;
+      color: var(--text-primary);
+      background: var(--surface);
+      padding: .55rem .9rem;
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+    .form-control:focus, .form-select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-glow);
+      outline: none;
+    }
+    .form-control::placeholder { color: var(--text-muted); }
+    .form-control-sm, .form-select-sm { padding: .35rem .7rem; font-size: .8rem; }
+    .form-text { font-size: .78rem; color: var(--text-muted); margin-top: .3rem; }
+    .text-danger { font-size: .78rem; }
+
+    /* Input groups */
+    .input-group .btn { border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+    .input-group .form-control { border-radius: var(--radius-sm) 0 0 var(--radius-sm); }
+
+    /* =========================================================
+       ALERTS / MESSAGES
+    ========================================================= */
+    .alert {
+      border-radius: var(--radius);
+      border: none;
+      padding: .85rem 1.1rem;
+      font-size: .875rem;
+      display: flex;
+      align-items: flex-start;
+      gap: .65rem;
+    }
+    .alert::before {
+      font-family: 'Font Awesome 6 Free';
+      font-weight: 900;
+      font-size: .9rem;
+      flex-shrink: 0;
+      margin-top: .05rem;
+    }
+    .alert-success { background: var(--success-light); color: #065F46; }
+    .alert-success::before { content: "\f058"; }
+    .alert-danger, .alert-error  { background: var(--danger-light); color: #991B1B; }
+    .alert-danger::before { content: "\f057"; }
+    .alert-warning { background: var(--warning-light); color: #92400E; }
+    .alert-warning::before { content: "\f071"; }
+    .alert-info    { background: var(--info-light); color: #1E40AF; }
+    .alert-info::before { content: "\f05a"; }
+
+    /* =========================================================
+       SECTION HEADINGS
+    ========================================================= */
+    .section-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+      margin-left: .5rem;
+    }
+
+    /* =========================================================
+       FILTER BAR
+    ========================================================= */
+    .filter-bar {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: .9rem 1.25rem;
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      gap: .75rem;
+      box-shadow: var(--shadow-xs);
+    }
+    .filter-bar .form-label { margin-bottom: .25rem; }
+
+    /* =========================================================
+       CHART CARDS
+    ========================================================= */
+    .chart-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem 1.5rem;
+      box-shadow: var(--shadow-sm);
+    }
+    .chart-card-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: .95rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: .9rem;
+    }
+    .chart-container {
+      position: relative;
+      height: 260px;
+    }
+
+    /* =========================================================
+       ANNOUNCEMENT / UPDATE CARDS
+    ========================================================= */
+    .content-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      transition: box-shadow var(--transition);
+    }
+    .content-card:hover { box-shadow: var(--shadow-md); }
+    .content-card-header {
+      padding: 1.1rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface-2);
+    }
+    .content-card-body { padding: 1.25rem 1.5rem; }
+    .content-card-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin: 0 0 .2rem;
+    }
+    .content-card-meta {
+      font-size: .78rem;
+      color: var(--text-muted);
+      display: flex;
+      flex-wrap: wrap;
+      gap: .75rem;
+      align-items: center;
+    }
+    .content-card-meta span { display: flex; align-items: center; gap: .3rem; }
+
+    /* =========================================================
+       EMPTY STATE
+    ========================================================= */
+    .empty-state {
+      text-align: center;
+      padding: 3.5rem 1rem;
+      color: var(--text-muted);
+    }
+    .empty-state i {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+      opacity: .4;
+      display: block;
+    }
+    .empty-state p { font-size: .95rem; margin: 0; }
+
+    /* =========================================================
+       FOOTER
+    ========================================================= */
+    .page-footer {
+      text-align: center;
+      padding: 1.5rem 0 .5rem;
+      font-size: .78rem;
+      color: var(--text-muted);
+      border-top: 1px solid var(--border);
+      margin-top: 2rem;
+    }
+
+    /* =========================================================
+       UTILITIES
+    ========================================================= */
+    .text-primary-custom { color: var(--primary) !important; }
+    .text-muted-custom { color: var(--text-muted) !important; }
+    .bg-surface { background: var(--surface) !important; }
+
+    /* Smooth page load */
+    body { animation: fadeIn .25s ease; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Quill editor theme override */
+    .ql-toolbar { border-color: var(--border) !important; border-radius: var(--radius-sm) var(--radius-sm) 0 0 !important; }
+    .ql-container { border-color: var(--border) !important; border-radius: 0 0 var(--radius-sm) var(--radius-sm) !important; font-family: 'DM Sans', sans-serif !important; }
+    .ql-editor { font-size: .9rem; }
+
+    /* Status badge helpers */
+    .status-ok       { background: var(--success-light); color: #065F46; }
+    .status-maint    { background: var(--warning-light); color: #92400E; }
+    .status-disabled { background: var(--surface-2);    color: var(--text-muted); border: 1px solid var(--border); }
   </style>
 
   {% block extra_head %}{% endblock %}
@@ -117,128 +695,146 @@
 
 <body>
 
-  <!-- Topbar -->
-  <div class="topbar py-3">
-    <div class="container d-flex align-items-center justify-content-between flex-wrap gap-3 mb-2">
-      <div class="brand-wrap">
+  <!-- ═══════════════════════════════════════════════════
+       TOPBAR
+  ════════════════════════════════════════════════════ -->
+  <nav class="topbar">
+    <div class="topbar-inner">
+
+      <!-- Brand -->
+      <a href="{% url 'dashboard' %}" class="brand-wrap" style="text-decoration:none;">
         <div class="brand-logo">
-          {# Put your logo in: labapp/static/img/nsu_logo.png (or change path) #}
           <img src="{% static 'labapp/img/nsu_logo.png' %}" alt="NSU Logo">
         </div>
-
-        <div>
-          <p class="brand-title">MI Lab Resource Manager</p>
-          <p class="brand-sub">North South University</p>
+        <div class="brand-text">
+          <span class="brand-title">MI Lab</span>
+          <span class="brand-sub">Resource Manager · NSU</span>
         </div>
-      </div>
+      </a>
 
-      <div class="d-flex align-items-center gap-2 flex-wrap">
+      <!-- User area -->
+      <div class="user-chips">
         {% if user.is_authenticated %}
-          <span class="pill">
-            <i class="fa-solid fa-user"></i>
+
+          <span class="chip chip-ghost">
+            <i class="fa-solid fa-user" style="font-size:.7rem;"></i>
             {{ user.get_full_name|default:user.username }}
           </span>
 
-          <span class="pill">
-            <i class="fa-solid fa-id-badge"></i>
-            {% if user.is_superuser or user.is_staff %}
-              Admin
-            {% else %}
-              {{ user.role|default:"RA" }}
-            {% endif %}
+          <span class="chip chip-ghost">
+            <i class="fa-solid fa-id-badge" style="font-size:.7rem;"></i>
+            {% if user.is_superuser or user.is_staff %}Admin
+            {% else %}{{ user.role|default:"RA" }}{% endif %}
           </span>
 
           <form method="post" action="{% url 'logout' %}" class="d-inline">
             {% csrf_token %}
-            <button type="submit" class="pill" style="background: rgba(255,255,255,.18)" onclick="return confirm('Are you sure you want to logout?');">
-                <i class="fa-solid fa-right-from-bracket"></i> Logout
+            <button type="submit" class="chip chip-danger"
+                    onclick="return confirm('Log out?');"
+                    style="border:0;">
+              <i class="fa-solid fa-right-from-bracket" style="font-size:.7rem;"></i>
+              Logout
             </button>
           </form>
-          
+
         {% else %}
-          <a class="pill" href="{% url 'login' %}">
-            <i class="fa-solid fa-right-to-bracket"></i> Login
+          <a href="{% url 'login' %}" class="chip chip-ghost">
+            <i class="fa-solid fa-right-to-bracket" style="font-size:.7rem;"></i>
+            Sign In
           </a>
         {% endif %}
       </div>
     </div>
 
-    {# SECOND ROW: quick nav links (optional) #}
+    <!-- ── Nav row ── -->
     {% if user.is_authenticated %}
-      <div class="container pb-2">
+    <div class="nav-row">
 
-        <div class="navpills">
-          <!-- Dashboard always accessible -->
-          <a class="pill" href="{% url 'dashboard' %}"><i class="fa-solid fa-gauge-high"></i> Dashboard</a>
+      <a class="nav-item-link" href="{% url 'dashboard' %}">
+        <i class="fa-solid fa-gauge-high"></i> Dashboard
+      </a>
 
-          <!-- Bookings dropdown -->
-          <div class="dropdown">
-            <a class="pill dropdown-toggle" href="#" id="ddBookings" data-bs-toggle="dropdown" aria-expanded="false">
-              <i class="fa-solid fa-calendar-plus"></i> Bookings
-            </a>
-            <ul class="dropdown-menu">
-              <!-- New bookings are available to all users -->
-              <li><a class="dropdown-item" href="{% url 'create_booking' %}">New Booking</a></li>
-              {% if user.is_staff or user.is_superuser or user.role == 'Faculty' %}
-                <!-- Admins/faculty can see all bookings -->
-                <li><a class="dropdown-item" href="{% url 'all_bookings' %}">All Bookings</a></li>
-              {% endif %}
-              <!-- Everyone can view their own bookings -->
-              <li><a class="dropdown-item" href="{% url 'my_bookings' %}">My Bookings</a></li>
-              <!-- Show all resources regardless of status; unavailable items will be disabled in the view -->
-              <li><a class="dropdown-item" href="{% url 'available_resources' %}">Available Resources</a></li>
-            </ul>
-          </div>
+      <div class="nav-divider"></div>
 
-          <!-- Resources dropdown (admin only) -->
+      <!-- Bookings -->
+      <div class="dropdown">
+        <button class="nav-item-link dropdown-toggle" type="button"
+                id="ddBookings" data-bs-toggle="dropdown" aria-expanded="false">
+          <i class="fa-solid fa-calendar-check"></i> Bookings
+        </button>
+        <ul class="dropdown-menu" aria-labelledby="ddBookings">
+          <li><a class="dropdown-item" href="{% url 'create_booking' %}">
+            <i class="fa-solid fa-plus me-2"></i>New Booking</a></li>
           {% if user.is_staff or user.is_superuser or user.role == 'Faculty' %}
-          <div class="dropdown">
-            <a class="pill dropdown-toggle" href="#" id="ddResources" data-bs-toggle="dropdown" aria-expanded="false">
-              <i class="fa-solid fa-computer"></i> Resources
-            </a>
-            <ul class="dropdown-menu">
-              <!-- Rename Add Resource to Manage Resource and remove separate manage link -->
-              <li><a class="dropdown-item" href="{% url 'add_resource' %}">Manage Resource</a></li>
-              <li><a class="dropdown-item" href="{% url 'print_usage_stats' %}">Print Usage Stats</a></li>
-            </ul>
-          </div>
-
-          <!-- Users dropdown (admin only) -->
-          <div class="dropdown">
-            <a class="pill dropdown-toggle" href="#" id="ddUsers" data-bs-toggle="dropdown" aria-expanded="false">
-              <i class="fa-solid fa-users"></i> Users
-            </a>
-            <ul class="dropdown-menu">
-              <li><a class="dropdown-item" href="{% url 'manage_users' %}">Manage Users</a></li>
-              <li><a class="dropdown-item" href="{% url 'registration_requests_admin' %}">Registration Requests</a></li>
-              <li><a class="dropdown-item" href="{% url 'add_admin' %}">Admin Privileges</a></li>
-            </ul>
-          </div>
-          {% else %}
-          {# For non-admin users we no longer show a separate My Bookings pill; the option is available under Bookings dropdown #}
+          <li><a class="dropdown-item" href="{% url 'all_bookings' %}">
+            <i class="fa-solid fa-list me-2"></i>All Bookings</a></li>
           {% endif %}
-
-          <!-- Updates dropdown accessible to all -->
-          <div class="dropdown">
-            <a class="pill dropdown-toggle" href="#" id="ddUpdates" data-bs-toggle="dropdown" aria-expanded="false">
-              <i class="fa-solid fa-bell"></i> Updates
-            </a>
-            <ul class="dropdown-menu">
-              <li><a class="dropdown-item" href="{% url 'weekly_updates' %}">Weekly Updates</a></li>
-              <li><a class="dropdown-item" href="{% url 'announcements' %}">Announcements</a></li>
-            </ul>
-          </div>
-
-        </div>
+          <li><a class="dropdown-item" href="{% url 'my_bookings' %}">
+            <i class="fa-solid fa-bookmark me-2"></i>My Bookings</a></li>
+          <li><a class="dropdown-item" href="{% url 'available_resources' %}">
+            <i class="fa-solid fa-circle-check me-2"></i>Available Resources</a></li>
+        </ul>
       </div>
+
+      <!-- Resources (admin/faculty) -->
+      {% if user.is_staff or user.is_superuser or user.role == 'Faculty' %}
+      <div class="dropdown">
+        <button class="nav-item-link dropdown-toggle" type="button"
+                id="ddResources" data-bs-toggle="dropdown" aria-expanded="false">
+          <i class="fa-solid fa-server"></i> Resources
+        </button>
+        <ul class="dropdown-menu" aria-labelledby="ddResources">
+          <li><a class="dropdown-item" href="{% url 'add_resource' %}">
+            <i class="fa-solid fa-sliders me-2"></i>Manage Resources</a></li>
+          <li><a class="dropdown-item" href="{% url 'print_usage_stats' %}">
+            <i class="fa-solid fa-print me-2"></i>Print Usage Stats</a></li>
+        </ul>
+      </div>
+
+      <!-- Users (admin/faculty) -->
+      <div class="dropdown">
+        <button class="nav-item-link dropdown-toggle" type="button"
+                id="ddUsers" data-bs-toggle="dropdown" aria-expanded="false">
+          <i class="fa-solid fa-users"></i> Users
+        </button>
+        <ul class="dropdown-menu" aria-labelledby="ddUsers">
+          <li><a class="dropdown-item" href="{% url 'manage_users' %}">
+            <i class="fa-solid fa-user-gear me-2"></i>Manage Users</a></li>
+          <li><a class="dropdown-item" href="{% url 'registration_requests_admin' %}">
+            <i class="fa-solid fa-user-clock me-2"></i>Registration Requests</a></li>
+          <li><a class="dropdown-item" href="{% url 'add_admin' %}">
+            <i class="fa-solid fa-shield-halved me-2"></i>Admin Privileges</a></li>
+        </ul>
+      </div>
+      {% endif %}
+
+      <div class="nav-divider"></div>
+
+      <!-- Updates -->
+      <div class="dropdown">
+        <button class="nav-item-link dropdown-toggle" type="button"
+                id="ddUpdates" data-bs-toggle="dropdown" aria-expanded="false">
+          <i class="fa-solid fa-bell"></i> Updates
+        </button>
+        <ul class="dropdown-menu" aria-labelledby="ddUpdates">
+          <li><a class="dropdown-item" href="{% url 'weekly_updates' %}">
+            <i class="fa-solid fa-calendar-week me-2"></i>Weekly Updates</a></li>
+          <li><a class="dropdown-item" href="{% url 'announcements' %}">
+            <i class="fa-solid fa-bullhorn me-2"></i>Announcements</a></li>
+        </ul>
+      </div>
+
+    </div>
     {% endif %}
-  </div>
+  </nav>
 
-  <div class="container py-4">
+  <!-- ═══════════════════════════════════════════════════
+       PAGE CONTENT
+  ════════════════════════════════════════════════════ -->
+  <div class="page-wrap">
 
-    {# Django messages (nice alerts) #}
     {% if messages %}
-      <div class="mb-3">
+      <div class="mb-4">
         {% for message in messages %}
           <div class="alert alert-{{ message.tags|default:'info' }} mb-2" role="alert">
             {{ message }}
@@ -249,20 +845,30 @@
 
     {% block content %}{% endblock %}
 
-    <div class="mt-4 text-center text-muted" style="font-size:.9rem;">
-      © {{ now|default:"MI Lab" }} • Resource Management
+    <div class="page-footer">
+      © {% now "Y" %} MI Lab · North South University · Resource Management System
     </div>
 
   </div>
 
   <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
-  <!-- Chart.js (needed for admin dashboard charts) -->
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <script>
+    // Highlight active nav link
+    document.addEventListener('DOMContentLoaded', () => {
+      const path = window.location.pathname;
+      document.querySelectorAll('.nav-item-link[href]').forEach(link => {
+        if (link.href && link.pathname === path) {
+          link.classList.add('active');
+        }
+      });
+    });
+  </script>
 
   {% block extra_js %}{% endblock %}
 
 </body>
 </html>
-

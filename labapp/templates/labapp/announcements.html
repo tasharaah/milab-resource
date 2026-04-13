@@ -1,33 +1,46 @@
 {% extends 'labapp/base.html' %}
-
 {% block title %}Announcements | MI Lab{% endblock %}
 
 {% block content %}
-<h1 class="mb-4">Announcements</h1>
 
-{% if user.is_staff or user.is_superuser or user.role == 'Faculty' %}
-<div class="mb-3">
-  <a href="{% url 'add_announcement' %}" class="btn btn-success">Post Announcement</a>
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Announcements</h1>
+    <p class="page-subtitle">Lab news and important notices</p>
+  </div>
+  {% if user.is_staff or user.is_superuser or user.role == 'Faculty' %}
+  <a href="{% url 'add_announcement' %}" class="btn btn-primary">
+    <i class="fa-solid fa-bullhorn me-2"></i>Post Announcement
+  </a>
+  {% endif %}
 </div>
-{% endif %}
 
 {% if announcements %}
+  <div style="display:flex; flex-direction:column; gap:1rem;">
   {% for ann in announcements %}
-  <div class="card mb-4 shadow-sm">
-    <div class="card-body">
-      <h5 class="card-title mb-1">{{ ann.title }}</h5>
-      <div class="mb-2 text-muted" style="font-size:.85rem;">
-        <strong>By:</strong> {{ ann.author.get_full_name|default:ann.author.username }} |
-        <strong>Date:</strong> {{ ann.created_at|date:'d M Y, h:i A' }}
+  <div class="content-card">
+    <div class="content-card-header">
+      <h2 class="content-card-title">{{ ann.title }}</h2>
+      <div class="content-card-meta mt-1">
+        <span><i class="fa-solid fa-user"></i>{{ ann.author.get_full_name|default:ann.author.username }}</span>
+        <span><i class="fa-solid fa-calendar"></i>{{ ann.created_at|date:'d M Y, h:i A' }}</span>
       </div>
-      <div class="card-text">
+    </div>
+    <div class="content-card-body">
+      <div style="line-height:1.75; color:var(--text-secondary);">
         {{ ann.content|safe }}
       </div>
     </div>
   </div>
   {% endfor %}
+  </div>
 {% else %}
-  <p>No announcements available.</p>
+<div class="card">
+  <div class="empty-state">
+    <i class="fa-solid fa-bullhorn"></i>
+    <p>No announcements posted yet.</p>
+  </div>
+</div>
 {% endif %}
 
 {% endblock %}

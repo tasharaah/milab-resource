@@ -1,41 +1,60 @@
 {% extends 'labapp/base.html' %}
-
 {% block title %}Active Bookings | MI Lab{% endblock %}
 
 {% block content %}
-<h1 class="mb-4">Active Bookings</h1>
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Active Bookings</h1>
+    <p class="page-subtitle">Resources currently in use</p>
+  </div>
+  <span class="badge bg-warning" style="font-size:.85rem; padding:.45em .9em; border-radius:999px;">
+    <i class="fa-solid fa-bolt me-1"></i>{{ bookings|length }} Active
+  </span>
+</div>
 
 {% if bookings %}
-<div class="table-responsive">
-  <table class="table table-striped align-middle">
-    <thead>
-      <tr>
-        <th scope="col">User</th>
-        <th scope="col">Resource</th>
-        <th scope="col">Description</th>
-        <th scope="col">Start</th>
-        <th scope="col">End</th>
-        <th scope="col">Action</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for b in bookings %}
-      <tr>
-        <td>{{ b.user.username }}</td>
-        <td>{{ b.resource.name }}</td>
-        <td>{{ b.description|default:'—' }}</td>
-        <td>{{ b.start_time|date:'d M, Y h:i A' }}</td>
-        <td>{{ b.end_time|date:'d M, Y h:i A' }}</td>
-        <td>
-          <a href="{% url 'release_booking' b.id %}" class="btn btn-sm btn-danger" onclick="return confirm('End this booking?');">End</a>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+<div class="data-table-wrap">
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>Resource</th>
+          <th>Description</th>
+          <th>Start</th>
+          <th>End</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for b in bookings %}
+        <tr>
+          <td style="font-weight:500; color:var(--text-primary);">{{ b.user.username }}</td>
+          <td>{{ b.resource.name }}</td>
+          <td style="color:var(--text-muted); max-width:180px;">{{ b.description|default:'—' }}</td>
+          <td style="font-size:.82rem; color:var(--text-muted);">{{ b.start_time|date:'d M, Y h:i A' }}</td>
+          <td style="font-size:.82rem; color:var(--text-muted);">{{ b.end_time|date:'d M, Y h:i A' }}</td>
+          <td>
+            <a href="{% url 'release_booking' b.id %}"
+               class="btn btn-sm btn-danger"
+               onclick="return confirm('End this booking?');">
+              <i class="fa-solid fa-stop me-1"></i>End
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </div>
 {% else %}
-<p>No active bookings at the moment.</p>
+<div class="card">
+  <div class="empty-state">
+    <i class="fa-solid fa-circle-check" style="color:var(--success);"></i>
+    <p>No active bookings at the moment.</p>
+  </div>
+</div>
 {% endif %}
 
 {% endblock %}
