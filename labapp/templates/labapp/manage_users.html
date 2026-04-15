@@ -40,7 +40,7 @@
           <td style="font-weight:600;color:var(--text-primary);">{{ u.username }}</td>
           <td>{{ u.get_full_name|default:u.username }}</td>
           <td>
-            <span class="badge {% if u.role == 'Faculty' %}bg-primary{% elif u.role == 'RA' %}bg-info text-dark{% elif u.role == 'Student' %}bg-success{% elif u.role == 'Intern' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+            <span class="badge {% if u.role == 'Faculty' %}bg-primary{% elif u.role == 'RA' %}bg-danger{% elif u.role == 'Student' %}bg-success{% elif u.role == 'Intern' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
               {{ u.role }}
             </span>
           </td>
