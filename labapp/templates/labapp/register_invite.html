@@ -1,0 +1,89 @@
+{% extends 'labapp/base.html' %}
+{% block title %}Complete Registration | MI Lab{% endblock %}
+
+{% block content %}
+<div style="min-height:70vh;display:flex;align-items:center;justify-content:center;padding:2rem 0;">
+  <div style="width:100%;max-width:480px;">
+
+    <div style="text-align:center;margin-bottom:2rem;">
+      <div style="display:inline-flex;align-items:center;justify-content:center;
+                  width:60px;height:60px;background:var(--primary-light);
+                  border-radius:var(--radius-lg);margin-bottom:1rem;">
+        <i class="fa-solid fa-brain" style="font-size:1.6rem;color:var(--primary);"></i>
+      </div>
+      <h1 style="font-size:1.75rem;font-weight:800;margin:0 0 .3rem;letter-spacing:-.02em;">User Registration</h1>
+      <p style="color:var(--text-muted);font-size:.9rem;margin:0;">Complete your account setup for MI Lab</p>
+    </div>
+
+    <div class="card">
+      <div class="card-body" style="padding:2rem;">
+
+        <!-- Pre-filled locked fields -->
+        <div class="row g-3 mb-4">
+          <div class="col-6">
+            <label class="form-label"><i class="fa-solid fa-envelope me-1"></i>Email</label>
+            <input type="text" class="form-control" value="{{ invitation.email }}" disabled style="background:var(--surface-2);color:var(--text-muted);">
+          </div>
+          <div class="col-6">
+            <label class="form-label"><i class="fa-solid fa-id-badge me-1"></i>Role</label>
+            <input type="text" class="form-control" value="{{ invitation.get_role_display }}" disabled style="background:var(--surface-2);color:var(--text-muted);">
+          </div>
+        </div>
+
+        {% if form.errors %}
+          <div class="alert alert-danger mb-3">
+            {% for field, errs in form.errors.items %}{% for e in errs %}<div>{{ e }}</div>{% endfor %}{% endfor %}
+          </div>
+        {% endif %}
+
+        <form method="post">
+          {% csrf_token %}
+
+          <div class="mb-3">
+            <label class="form-label">Username</label>
+            {{ form.username }}
+            {% if form.username.errors %}<div class="text-danger mt-1">{{ form.username.errors|striptags }}</div>{% endif %}
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-6">
+              <label class="form-label">First Name</label>
+              {{ form.first_name }}
+            </div>
+            <div class="col-6">
+              <label class="form-label">Last Name</label>
+              {{ form.last_name }}
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Phone Number</label>
+            {{ form.phone }}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Password</label>
+            {{ form.password1 }}
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label">Confirm Password</label>
+            {{ form.password2 }}
+            {% if form.password2.errors %}<div class="text-danger mt-1">{{ form.password2.errors|striptags }}</div>{% endif %}
+          </div>
+
+          <button type="submit" class="btn btn-primary w-100 btn-lg">
+            <i class="fa-solid fa-check me-2"></i>Submit
+          </button>
+        </form>
+
+      </div>
+    </div>
+
+    <p style="text-align:center;margin-top:1rem;font-size:.78rem;color:var(--text-muted);">
+      This invitation link expires {{ invitation.expires_at|date:"d M, Y h:i A" }}.
+    </p>
+
+  </div>
+</div>
+{% endblock %}

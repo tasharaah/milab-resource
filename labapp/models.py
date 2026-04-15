@@ -1,132 +1,66 @@
 """
 Database models for the MI Lab resource management application.
-
-This module defines three primary models:
-
-* User – a custom user model inheriting from AbstractUser with an
-  additional role field indicating whether the account belongs to a
-  Research Assistant (RA) or a Faculty member. A superuser can act
-  as an administrator.
-* Resource – represents a physical or virtual resource available in
-  the laboratory (for example, a specific computer or GPU). Each
-  resource has a name, description, GPU identifier and optionally
-  other characteristics.
-* Booking – records a reservation of a resource by a user for a given
-  time window. Each booking is marked as active or inactive and has
-  timestamps for tracking creation.
-
-These models are designed to work with Django's ORM, enabling the
-database engine to be swapped easily. When deploying to Cloud Run
-against Postgres, the same code can be reused without modification.
 """
 from __future__ import annotations
 
+import uuid
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils import timezone
 from datetime import datetime
-from django.contrib.auth.hashers import make_password, check_password
+from django.contrib.auth.hashers import make_password
 
 
 class User(AbstractUser):
-    """Custom user model with a role field for RA and faculty."""
+    """Custom user model with a role field."""
 
     class Role(models.TextChoices):
-        """
-        Defines the available user roles for the system. In addition to the original
-        Research Assistant (RA) and Faculty roles, students and interns are now
-        supported. When adding new roles here, ensure that corresponding helper
-        methods (e.g. is_student, is_intern) are defined below.
-        """
-        RA = 'RA', 'Research Assistant'
+        RA      = 'RA',      'Research Assistant'
         STUDENT = 'Student', 'Student'
-        INTERN = 'Intern', 'Intern'
+        INTERN  = 'Intern',  'Intern'
         FACULTY = 'Faculty', 'Faculty'
 
     role = models.CharField(
         max_length=10,
         choices=Role.choices,
         default=Role.RA,
-        help_text='Designates whether the user is a research assistant or faculty member.',
     )
-
-    # Optional phone number for the user. This field is used to generate
-    # quick WhatsApp contact links in the administration interface. We do not
-    # enforce a strict format because international numbers vary; instead,
-    # validation is delegated to forms.
     phone = models.CharField(max_length=20, blank=True)
 
-    def is_ra(self) -> bool:
-        return self.role == self.Role.RA
-
-    def is_student(self) -> bool:
-        """Return True if the user is a student."""
-        return self.role == self.Role.STUDENT
-
-    def is_intern(self) -> bool:
-        """Return True if the user is an intern."""
-        return self.role == self.Role.INTERN
-
-    def is_faculty(self) -> bool:
-        return self.role == self.Role.FACULTY
+    def is_ra(self)      -> bool: return self.role == self.Role.RA
+    def is_student(self) -> bool: return self.role == self.Role.STUDENT
+    def is_intern(self)  -> bool: return self.role == self.Role.INTERN
+    def is_faculty(self) -> bool: return self.role == self.Role.FACULTY
 
     def __str__(self) -> str:
         return self.username
 
 
 class Resource(models.Model):
-    """
-    Represents a physical or virtual resource in the lab. Resources can be
-    computers, GPUs or other specialised equipment. Each resource carries
-    metadata describing its type, unique code, GPU model (if any), a human
-    readable name and optional description. Resources also have a status
-    indicating whether they are operational or out of service. When
-    deploying to a multi‑instance environment, a resource's availability
-    should be determined by its status and any overlapping bookings.
-    """
+    """A physical or virtual lab resource."""
 
     class ResourceType(models.TextChoices):
-        COMPUTER = "COMPUTER", "Computer"
-        GPU = "GPU", "GPU"
-        OTHER = "OTHER", "Other"
+        PC     = 'PC',     'PC'
+        RUNPOD = 'RUNPOD', 'RunPod'
 
     class Status(models.TextChoices):
-        OK = "OK", "OK"
-        MAINTENANCE = "MAINTENANCE", "Maintenance"
-        DISABLED = "DISABLED", "Disabled"
+        OK          = 'OK',          'OK'
+        MAINTENANCE = 'MAINTENANCE', 'Maintenance'
+        DISABLED    = 'DISABLED',    'Disabled'
 
-    name = models.CharField(max_length=100, unique=True)
-    # type of resource (computer/GPU/other) for categorisation
-    resource_type = models.CharField(max_length=20, choices=ResourceType.choices, default=ResourceType.COMPUTER)
-    # operational status (disabled resources are not bookable)
-    status = models.CharField(max_length=20, choices=Status.choices, default=Status.OK)
-    # optional machine or GPU identifiers
-    computer_code = models.CharField(max_length=50, blank=True)
-    gpu = models.CharField(
-        max_length=100,
-        blank=True,
-        help_text='Identifier of the GPU associated with this resource, if any.',
-    )
-    description = models.TextField(blank=True)
+    name          = models.CharField(max_length=100, unique=True)
+    resource_type = models.CharField(max_length=20, choices=ResourceType.choices, default=ResourceType.PC)
+    status        = models.CharField(max_length=20, choices=Status.choices, default=Status.OK)
+    description   = models.TextField(blank=True)
 
     def __str__(self) -> str:
         return self.name
 
     @property
     def available(self) -> bool:
-        """
-        Determine if the resource is currently available. A resource is
-        unavailable if it is not marked as OK or if there exists any
-        overlapping active booking for the present time window. This
-        property is computed on demand and should not be used for bulk
-        availability checks; aggregate queries should be performed in
-        views for efficiency.
-        """
-        # If the resource is not OK, it cannot be used
         if self.status != self.Status.OK:
             return False
         now = timezone.now()
-        # Check for any active bookings overlapping the current time
         return not self.bookings.filter(
             is_active=True,
             start_time__lte=now,
@@ -134,42 +68,64 @@ class Resource(models.Model):
         ).exists()
 
 
-class Booking(models.Model):
-    """
-    Represents a time‑bounded reservation of a resource by a user. Bookings
-    include start and end times, an optional description and the software
-    required for the task. A booking can be ended early, which records
-    when it was actually released. Overlap checks should be enforced at
-    the form/validation level and optionally at the database level for
-    production deployments.
-    """
+class Project(models.Model):
+    """A research project tracked in the lab."""
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="bookings")
-    resource = models.ForeignKey(Resource, on_delete=models.CASCADE, related_name="bookings")
-    start_time = models.DateTimeField()
-    end_time = models.DateTimeField()
-    # what software or tool the user intends to use on this resource
-    software = models.CharField(max_length=100, blank=True, help_text="Name of software or tool to be used.")
-    # optional project name associated with this booking. This allows the lab
-    # to correlate bookings with specific projects, and is particularly
-    # useful for weekly updates and administrative reporting.
+    class Status(models.TextChoices):
+        UPCOMING  = 'UPCOMING',  'Upcoming'
+        PROPOSED  = 'PROPOSED',  'Proposed'
+        ONGOING   = 'ONGOING',   'Ongoing'
+        COMPLETED = 'COMPLETED', 'Completed'
+
+    name                     = models.CharField(max_length=200, unique=True)
+    principal_investigator   = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='pi_projects',
+    )
+    co_principal_investigators = models.ManyToManyField(
+        User, blank=True, related_name='co_pi_projects',
+    )
+    research_assistants      = models.ManyToManyField(
+        User, blank=True, related_name='ra_projects',
+    )
+    grant                    = models.CharField(max_length=300, blank=True)
+    status                   = models.CharField(max_length=20, choices=Status.choices, default=Status.PROPOSED)
+    start_date               = models.DateField(null=True, blank=True)
+    estimated_budget_bdt     = models.BigIntegerField(null=True, blank=True)
+    eta                      = models.DateField(null=True, blank=True, verbose_name='Estimated Completion')
+    created_at               = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class Booking(models.Model):
+    """A time-bounded reservation of a resource."""
+
+    user        = models.ForeignKey(User, on_delete=models.CASCADE, related_name='bookings')
+    resource    = models.ForeignKey(Resource, on_delete=models.CASCADE, related_name='bookings')
+    start_time  = models.DateTimeField()
+    end_time    = models.DateTimeField()
     project_name = models.CharField(max_length=200, blank=True)
     description = models.TextField(blank=True)
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    is_active   = models.BooleanField(default=True)
+    created_at  = models.DateTimeField(auto_now_add=True)
     released_at = models.DateTimeField(null=True, blank=True)
-
-    # When a booking is created by a faculty member on behalf of another user,
-    # this field stores the creator. For self‑service bookings (e.g. by
-    # RAs/students/interns), `created_by` will match the `user` field. This
-    # enables auditing of who made the reservation and is used to
-    # restrict edit permissions.
-    created_by = models.ForeignKey('User', on_delete=models.CASCADE, related_name='created_bookings', null=True, blank=True)
+    created_by  = models.ForeignKey(
+        'User', on_delete=models.CASCADE,
+        related_name='created_bookings', null=True, blank=True,
+    )
 
     class Meta:
         ordering = ['-created_at']
         constraints = [
-            models.CheckConstraint(condition=models.Q(end_time__gte=models.F('start_time')), name='booking_end_after_start'),
+            models.CheckConstraint(
+                condition=models.Q(end_time__gte=models.F('start_time')),
+                name='booking_end_after_start',
+            ),
         ]
         indexes = [
             models.Index(fields=['resource', 'is_active', 'start_time', 'end_time']),
@@ -179,106 +135,84 @@ class Booking(models.Model):
         return f"{self.resource.name} booked by {self.user.username}"
 
     def overlaps(self, start: datetime, end: datetime) -> bool:
-        """
-        Return True if this booking overlaps the given time window. A booking
-        overlaps when it is active and its time window intersects the
-        candidate window. This helper is primarily used in form
-        validation; aggregate queries are more efficient for bulk checks.
-        """
         return self.is_active and not (self.end_time <= start or self.start_time >= end)
 
     def end_booking(self) -> None:
         now = timezone.now()
-
-        # If booking hasn't started yet, end it at start_time (valid, and means "cancelled/ended")
         if now <= self.start_time:
             self.end_time = self.start_time
         else:
-            # booking started -> end at now, but not beyond planned end
             self.end_time = min(now, self.end_time)
-
-        self.is_active = False
+        self.is_active   = False
         self.released_at = timezone.now()
-        self.save(update_fields=["end_time", "is_active", "released_at"])
+        self.save(update_fields=['end_time', 'is_active', 'released_at'])
 
     @property
     def currently_active(self) -> bool:
-        """
-        Determine if this booking is currently in progress. A booking is
-        considered active only if it is marked as active and the current
-        time falls within its start and end window. This property does
-        not modify the stored `is_active` flag but provides a
-        real‑time check used by views and templates to hide bookings
-        whose scheduled end has passed.
-        """
         now = timezone.now()
         return self.is_active and self.start_time <= now <= self.end_time
 
 
+class UserInvitation(models.Model):
+    """Admin-generated invitation for a new user to register."""
 
+    email      = models.EmailField()
+    role       = models.CharField(max_length=10, choices=User.Role.choices, default=User.Role.RA)
+    token      = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='sent_invitations')
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    used       = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def save(self, *args, **kwargs):
+        if not self.pk and not self.expires_at:
+            self.expires_at = timezone.now() + timezone.timedelta(hours=48)
+        super().save(*args, **kwargs)
+
+    @property
+    def is_expired(self) -> bool:
+        return timezone.now() > self.expires_at
+
+    @property
+    def is_valid(self) -> bool:
+        return not self.used and not self.is_expired
+
+    def __str__(self) -> str:
+        return f"Invite to {self.email} ({self.role})"
+
+
+# Keep RegistrationRequest for backwards compatibility with existing migrations
 class RegistrationRequest(models.Model):
-    """
-    Stores a pending request for a new account. When a user submits a
-    registration request via the public registration form, an instance of
-    this model is created with status set to pending. An administrator
-    reviews the request and either approves or rejects it. Upon approval,
-    a new User is created with the specified role.
-    """
-
     class Status(models.TextChoices):
-        PENDING = 'PENDING', 'Pending'
+        PENDING  = 'PENDING',  'Pending'
         APPROVED = 'APPROVED', 'Approved'
         REJECTED = 'REJECTED', 'Rejected'
 
-    username = models.CharField(max_length=150)
-    email = models.EmailField()
-    first_name = models.CharField(max_length=150, blank=True)
-    last_name = models.CharField(max_length=150, blank=True)
-    # Requested role for the new account.  In addition to RAs, students
-    # and interns can register via the public form.  An administrator
-    # approves the request and assigns the selected role to the new User.
-    role = models.CharField(
-        max_length=10,
-        choices=User.Role.choices,
-        default=User.Role.RA,
-    )
-
-    # Optional phone number captured at registration.  When the request
-    # is approved the value is copied to the User.phone field.  The
-    # field is left blank if the registrant does not provide a number.
-    phone = models.CharField(max_length=20, blank=True)
-    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
-    created_at = models.DateTimeField(auto_now_add=True)
-    reviewed_at = models.DateTimeField(null=True, blank=True)
+    username      = models.CharField(max_length=150)
+    email         = models.EmailField()
+    first_name    = models.CharField(max_length=150, blank=True)
+    last_name     = models.CharField(max_length=150, blank=True)
+    role          = models.CharField(max_length=10, choices=User.Role.choices, default=User.Role.RA)
+    phone         = models.CharField(max_length=20, blank=True)
+    status        = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    created_at    = models.DateTimeField(auto_now_add=True)
+    reviewed_at   = models.DateTimeField(null=True, blank=True)
     password_hash = models.CharField(max_length=128, blank=True)
-
 
     def __str__(self) -> str:
         return f"{self.username} ({self.email}) - {self.status}"
 
 
-# ---------------------------------------------------------------------------
-# Additional models for weekly updates and announcements
-#
-# WeeklyUpdate allows research assistants, students and interns to submit
-# progress reports or notes about their ongoing projects. Each update is
-# associated with a user and may include a project name to group related
-# updates. Content is stored as HTML to support rich text formatting
-# (bold, italics, lists, etc.).
-
 class WeeklyUpdate(models.Model):
-    """
-    A weekly progress update submitted by a user. Updates are grouped by
-    project_name and user so that faculty can review progress on each
-    project. The content field stores HTML generated by a rich text
-    editor, allowing users to format their updates.
-    """
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='weekly_updates')
+    user         = models.ForeignKey(User, on_delete=models.CASCADE, related_name='weekly_updates')
     project_name = models.CharField(max_length=200)
-    title = models.CharField(max_length=200, blank=True)
-    content = models.TextField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    title        = models.CharField(max_length=200, blank=True)
+    content      = models.TextField()
+    created_at   = models.DateTimeField(auto_now_add=True)
+    updated_at   = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ['-created_at']
@@ -288,15 +222,9 @@ class WeeklyUpdate(models.Model):
 
 
 class Announcement(models.Model):
-    """
-    A general announcement posted by faculty or administrators. Announcements
-    are visible to all users and typically communicate important
-    information about the lab, deadlines, maintenance windows and other
-    updates. Content is stored as HTML to support rich text formatting.
-    """
-    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='announcements')
-    title = models.CharField(max_length=200)
-    content = models.TextField()
+    author     = models.ForeignKey(User, on_delete=models.CASCADE, related_name='announcements')
+    title      = models.CharField(max_length=200)
+    content    = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

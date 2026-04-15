@@ -9,7 +9,7 @@
     <p class="page-subtitle">Reserve a lab resource for your project</p>
   </div>
   <a href="{% url 'available_resources' %}" class="btn btn-secondary">
-    <i class="fa-solid fa-arrow-left me-2"></i>See Available Resources
+    <i class="fa-solid fa-arrow-left me-2"></i>Available Resources
   </a>
 </div>
 
@@ -33,52 +33,61 @@
             {{ form.resource }}
           </div>
 
-          <div class="row g-3 mb-4">
-            <div class="col-md-6">
-              <label for="id_start_time" class="form-label">
-                <i class="fa-solid fa-play me-1" style="color:var(--success);"></i>Start Time
-              </label>
-              {{ form.start_time }}
+          <!-- Start time display (read-only info) -->
+          <div class="mb-4">
+            <label class="form-label">
+              <i class="fa-solid fa-play me-1" style="color:var(--success);"></i>Start Time
+            </label>
+            <div style="display:flex;align-items:center;gap:.75rem;background:var(--success-light);
+                        border:1px solid #A7F3D0;border-radius:var(--radius-sm);padding:.6rem 1rem;">
+              <i class="fa-solid fa-circle-dot" style="color:var(--success);font-size:.8rem;"></i>
+              <span style="font-size:.875rem;font-weight:600;color:#065F46;" id="start-time-display">
+                {{ now_local|date:"d M, Y h:i A" }}
+              </span>
+              <span style="font-size:.75rem;color:#059669;margin-left:auto;">Starts immediately</span>
             </div>
-            <div class="col-md-6">
-              <label for="id_end_time" class="form-label">
-                <i class="fa-solid fa-stop me-1" style="color:var(--danger);"></i>End Time
-              </label>
-              {{ form.end_time }}
-            </div>
+            {{ form.start_time }}
           </div>
 
           <div class="mb-4">
-            <label for="id_software" class="form-label">
-              <i class="fa-solid fa-code me-1" style="color:var(--accent);"></i>Software / Tool
+            <label for="id_end_time" class="form-label">
+              <i class="fa-solid fa-stop me-1" style="color:var(--danger);"></i>End Time
             </label>
-            {{ form.software }}
+            {{ form.end_time }}
           </div>
 
+          <!-- Project selection -->
           <div class="mb-4">
-            <label for="id_project_name" class="form-label">
-              <i class="fa-solid fa-folder me-1" style="color:var(--warning);"></i>Project Name
-              <span style="font-weight:400; color:var(--text-muted);">(optional)</span>
+            <label for="id_project_select" class="form-label">
+              <i class="fa-solid fa-diagram-project me-1" style="color:var(--warning);"></i>Project
             </label>
+            {{ form.project_select }}
             {{ form.project_name }}
+          </div>
+
+          <!-- Custom project name (shown only when 'Others' selected) -->
+          <div class="mb-4" id="custom-project-wrap" style="display:none;">
+            <label for="id_project_name_custom" class="form-label">
+              <i class="fa-solid fa-pencil me-1" style="color:var(--accent);"></i>Enter Project Name
+            </label>
+            {{ form.project_name_custom }}
           </div>
 
           <div class="mb-4">
             <label for="id_description" class="form-label">
               <i class="fa-solid fa-note-sticky me-1" style="color:var(--text-muted);"></i>Description
-              <span style="font-weight:400; color:var(--text-muted);">(optional)</span>
+              <span style="font-weight:400;color:var(--text-muted);">(optional)</span>
             </label>
             {{ form.description }}
           </div>
 
           {% if user.is_staff or user.is_superuser or user.role == 'Faculty' %}
-          <div class="mb-4" style="padding:1rem; background:var(--primary-light); border-radius:var(--radius); border:1px solid #c7d2fe;">
+          <div class="mb-4" style="padding:1rem;background:var(--primary-light);border-radius:var(--radius);border:1px solid #c7d2fe;">
             <label for="id_assignee" class="form-label" style="color:var(--primary-dark);">
               <i class="fa-solid fa-user-tag me-1"></i>Assign To
-              <span style="font-weight:400; color:var(--primary);">(optional)</span>
+              <span style="font-weight:400;color:var(--primary);">(optional)</span>
             </label>
             {{ form.assignee }}
-            <p class="form-text">Assign this booking to another user.</p>
           </div>
           {% endif %}
 
@@ -92,4 +101,20 @@
   </div>
 </div>
 
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const sel  = document.getElementById('id_project_select');
+  const wrap = document.getElementById('custom-project-wrap');
+
+  function toggleCustom() {
+    if (sel && wrap) {
+      wrap.style.display = sel.value === '__OTHER__' ? '' : 'none';
+    }
+  }
+  if (sel) { sel.addEventListener('change', toggleCustom); toggleCustom(); }
+});
+</script>
 {% endblock %}

@@ -1,148 +1,63 @@
 {% extends 'labapp/base.html' %}
 {% block title %}Admin Dashboard | MI Lab{% endblock %}
-
 {% block content %}
 
-<!-- Page Header -->
 <div class="page-header">
   <div>
     <h1 class="page-title">Admin Dashboard</h1>
-    <p class="page-subtitle">Lab resource overview &amp; usage analytics</p>
   </div>
-  <a href="{% url 'create_booking' %}" class="btn btn-primary">
-    <i class="fa-solid fa-plus me-2"></i>New Booking
-  </a>
+  <a href="{% url 'create_booking' %}" class="btn btn-primary"><i class="fa-solid fa-plus me-2"></i>New Booking</a>
 </div>
 
-<!-- Stat Cards -->
 <div class="row g-3 mb-4">
   <div class="col-6 col-md-4 col-xl">
     <a href="{% url 'add_resource' %}" class="text-decoration-none">
-      <div class="stat-card">
-        <div class="stat-top">
-          <div class="stat-icon bg-primary"><i class="fa fa-server"></i></div>
-          <div>
-            <div class="stat-label">Total Resources</div>
-            <div class="stat-value">{{ total_resources }}</div>
-          </div>
-        </div>
-      </div>
+      <div class="stat-card"><div class="stat-top"><div class="stat-icon bg-primary"><i class="fa fa-server"></i></div><div class="stat-text"><div class="stat-label">Total Resources</div><div class="stat-value">{{ total_resources }}</div></div></div></div>
     </a>
   </div>
   <div class="col-6 col-md-4 col-xl">
     <a href="{% url 'available_resources' %}" class="text-decoration-none">
-      <div class="stat-card">
-        <div class="stat-top">
-          <div class="stat-icon bg-success"><i class="fa fa-circle-check"></i></div>
-          <div>
-            <div class="stat-label">Available</div>
-            <div class="stat-value">{{ available_resources }}</div>
-          </div>
-        </div>
-      </div>
+      <div class="stat-card"><div class="stat-top"><div class="stat-icon bg-success"><i class="fa fa-circle-check"></i></div><div class="stat-text"><div class="stat-label">Available</div><div class="stat-value">{{ available_resources }}</div></div></div></div>
     </a>
   </div>
   <div class="col-6 col-md-4 col-xl">
     <a href="{% url 'all_bookings' %}" class="text-decoration-none">
-      <div class="stat-card">
-        <div class="stat-top">
-          <div class="stat-icon bg-warning"><i class="fa fa-bolt"></i></div>
-          <div>
-            <div class="stat-label">Active Now</div>
-            <div class="stat-value">{{ active_bookings_count }}</div>
-          </div>
-        </div>
-      </div>
+      <div class="stat-card"><div class="stat-top"><div class="stat-icon bg-warning"><i class="fa fa-bolt"></i></div><div class="stat-text"><div class="stat-label">Active Now</div><div class="stat-value">{{ active_bookings_count }}</div></div></div></div>
     </a>
   </div>
   <div class="col-6 col-md-6 col-xl">
     <a href="{% url 'manage_users' %}" class="text-decoration-none">
-      <div class="stat-card">
-        <div class="stat-top">
-          <div class="stat-icon bg-info"><i class="fa fa-users"></i></div>
-          <div>
-            <div class="stat-label">Total Users</div>
-            <div class="stat-value">{{ total_users }}</div>
-          </div>
-        </div>
-      </div>
+      <div class="stat-card"><div class="stat-top"><div class="stat-icon bg-info"><i class="fa fa-users"></i></div><div class="stat-text"><div class="stat-label">Total Users</div><div class="stat-value">{{ total_users }}</div></div></div></div>
     </a>
   </div>
   <div class="col-6 col-md-6 col-xl">
+    <!-- Faculty card routes to manage users filtered by Faculty -->
     <a href="{% url 'manage_users' %}?role=Faculty" class="text-decoration-none">
-      <div class="stat-card">
-        <div class="stat-top">
-          <div class="stat-icon bg-secondary"><i class="fa fa-chalkboard-user"></i></div>
-          <div>
-            <div class="stat-label">Faculty</div>
-            <div class="stat-value">{{ total_faculty }}</div>
-          </div>
-        </div>
-      </div>
+      <div class="stat-card"><div class="stat-top"><div class="stat-icon bg-secondary"><i class="fa fa-chalkboard-user"></i></div><div class="stat-text"><div class="stat-label">Faculty</div><div class="stat-value">{{ total_faculty }}</div></div></div></div>
     </a>
   </div>
 </div>
 
-<!-- Charts Row 1 -->
 <div class="row g-3 mb-3">
   <div class="col-lg-6">
     <div class="chart-card">
       <div class="chart-card-title">Resource Usage by RA</div>
       <form method="get" class="row g-2 mb-3">
-        <div class="col-sm-5">
-          <select name="pie_ra" class="form-select form-select-sm">
-            <option value="all">All RAs</option>
-            {% for ra in ra_list %}
-              <option value="{{ ra.id }}" {% if ra.id|stringformat:'s' == pie_selected_ra|stringformat:'s' %}selected{% endif %}>
-                {{ ra.get_full_name|default:ra.username }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-sm-3">
-          <input type="date" name="pie_start" value="{{ pie_start_date }}" class="form-control form-control-sm">
-        </div>
-        <div class="col-sm-2">
-          <select name="pie_period" class="form-select form-select-sm">
-            <option value="">Custom</option>
-            <option value="last_week">Last Week</option>
-            <option value="last_month">Last Month</option>
-            <option value="last_3_months">3 Months</option>
-            <option value="last_year">Last Year</option>
-            <option value="all">All Time</option>
-          </select>
-        </div>
+        <div class="col-sm-5"><select name="pie_ra" class="form-select form-select-sm"><option value="all">All RAs</option>{% for ra in ra_list %}<option value="{{ ra.id }}" {% if ra.id|stringformat:'s' == pie_selected_ra|stringformat:'s' %}selected{% endif %}>{{ ra.get_full_name|default:ra.username }}</option>{% endfor %}</select></div>
+        <div class="col-sm-3"><input type="date" name="pie_start" value="{{ pie_start_date }}" class="form-control form-control-sm"></div>
+        <div class="col-sm-2"><select name="pie_period" class="form-select form-select-sm"><option value="">Custom</option><option value="last_week">Last Week</option><option value="last_month">Last Month</option><option value="last_3_months">3 Months</option><option value="last_year">Last Year</option><option value="all">All Time</option></select></div>
         <div class="col-auto"><button type="submit" class="btn btn-sm btn-primary">Apply</button></div>
       </form>
       <div class="chart-container"><canvas id="pieChart"></canvas></div>
     </div>
   </div>
-
   <div class="col-lg-6">
     <div class="chart-card">
       <div class="chart-card-title">Resource Usage Duration (hrs)</div>
       <form method="get" class="row g-2 mb-3">
-        <div class="col-sm-5">
-          <select name="res_ra" class="form-select form-select-sm">
-            <option value="all">All RAs</option>
-            {% for ra in ra_list %}
-              <option value="{{ ra.id }}" {% if ra.id|stringformat:'s' == res_selected_ra|stringformat:'s' %}selected{% endif %}>
-                {{ ra.get_full_name|default:ra.username }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-sm-3">
-          <input type="date" name="res_start" value="{{ res_start_date }}" class="form-control form-control-sm">
-        </div>
-        <div class="col-sm-2">
-          <select name="res_period" class="form-select form-select-sm">
-            <option value="">Custom</option>
-            <option value="last_week">Last Week</option>
-            <option value="last_month">Last Month</option>
-            <option value="last_3_months">3 Months</option>
-            <option value="last_year">Last Year</option>
-            <option value="all">All Time</option>
-          </select>
-        </div>
+        <div class="col-sm-5"><select name="res_ra" class="form-select form-select-sm"><option value="all">All RAs</option>{% for ra in ra_list %}<option value="{{ ra.id }}" {% if ra.id|stringformat:'s' == res_selected_ra|stringformat:'s' %}selected{% endif %}>{{ ra.get_full_name|default:ra.username }}</option>{% endfor %}</select></div>
+        <div class="col-sm-3"><input type="date" name="res_start" value="{{ res_start_date }}" class="form-control form-control-sm"></div>
+        <div class="col-sm-2"><select name="res_period" class="form-select form-select-sm"><option value="">Custom</option><option value="last_week">Last Week</option><option value="last_month">Last Month</option><option value="last_3_months">3 Months</option><option value="last_year">Last Year</option><option value="all">All Time</option></select></div>
         <div class="col-auto"><button type="submit" class="btn btn-sm btn-primary">Apply</button></div>
       </form>
       <div class="chart-container"><canvas id="resourceDurationChart"></canvas></div>
@@ -150,60 +65,26 @@
   </div>
 </div>
 
-<!-- Charts Row 2 -->
 <div class="row g-3">
   <div class="col-lg-6">
     <div class="chart-card">
       <div class="chart-card-title">Top Users by Time (hrs)</div>
       <form method="get" class="row g-2 mb-3">
-        <div class="col-sm-4">
-          <input type="date" name="user_start" value="{{ user_start_date }}" class="form-control form-control-sm">
-        </div>
-        <div class="col-sm-4">
-          <input type="date" name="user_end" value="{{ user_end_date }}" class="form-control form-control-sm">
-        </div>
-        <div class="col-sm-2">
-          <select name="user_period" class="form-select form-select-sm">
-            <option value="">Custom</option>
-            <option value="last_week">Last Week</option>
-            <option value="last_month">Last Month</option>
-            <option value="last_3_months">3 Months</option>
-            <option value="last_year">Last Year</option>
-            <option value="all">All Time</option>
-          </select>
-        </div>
+        <div class="col-sm-4"><input type="date" name="user_start" value="{{ user_start_date }}" class="form-control form-control-sm"></div>
+        <div class="col-sm-4"><input type="date" name="user_end" value="{{ user_end_date }}" class="form-control form-control-sm"></div>
+        <div class="col-sm-2"><select name="user_period" class="form-select form-select-sm"><option value="">Custom</option><option value="last_week">Last Week</option><option value="last_month">Last Month</option><option value="last_3_months">3 Months</option><option value="last_year">Last Year</option><option value="all">All Time</option></select></div>
         <div class="col-auto"><button type="submit" class="btn btn-sm btn-primary">Apply</button></div>
       </form>
       <div class="chart-container"><canvas id="topUsersChart"></canvas></div>
     </div>
   </div>
-
   <div class="col-lg-6">
     <div class="chart-card">
-      <div class="chart-card-title">Most Active Hours (Bookings)</div>
+      <div class="chart-card-title">Most Active Hours</div>
       <form method="get" class="row g-2 mb-3">
-        <div class="col-sm-4">
-          <select name="time_resource" class="form-select form-select-sm">
-            <option value="all" {% if time_selected_resource == 'all' %}selected{% endif %}>All Resources</option>
-            {% for res in resource_list %}
-              <option value="{{ res.id }}" {% if res.id|stringformat:'s' == time_selected_resource|stringformat:'s' %}selected{% endif %}>
-                {{ res.name }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-sm-3">
-          <input type="date" name="time_start" value="{{ time_start_date }}" class="form-control form-control-sm">
-        </div>
-        <div class="col-sm-2">
-          <select name="time_period" class="form-select form-select-sm">
-            <option value="">Custom</option>
-            <option value="last_week">Last Week</option>
-            <option value="last_month">Last Month</option>
-            <option value="last_3_months">3 Months</option>
-            <option value="last_year">Last Year</option>
-            <option value="all">All Time</option>
-          </select>
-        </div>
+        <div class="col-sm-4"><select name="time_resource" class="form-select form-select-sm"><option value="all" {% if time_selected_resource == 'all' %}selected{% endif %}>All Resources</option>{% for res in resource_list %}<option value="{{ res.id }}" {% if res.id|stringformat:'s' == time_selected_resource|stringformat:'s' %}selected{% endif %}>{{ res.name }}</option>{% endfor %}</select></div>
+        <div class="col-sm-3"><input type="date" name="time_start" value="{{ time_start_date }}" class="form-control form-control-sm"></div>
+        <div class="col-sm-2"><select name="time_period" class="form-select form-select-sm"><option value="">Custom</option><option value="last_week">Last Week</option><option value="last_month">Last Month</option><option value="last_3_months">3 Months</option><option value="last_year">Last Year</option><option value="all">All Time</option></select></div>
         <div class="col-auto"><button type="submit" class="btn btn-sm btn-primary">Apply</button></div>
       </form>
       <div class="chart-container"><canvas id="hourChart"></canvas></div>
@@ -215,96 +96,18 @@
 
 {% block extra_js %}
 <script>
-const CHART_COLORS = {
-  grid:   '#E2E8F0',
-  text:   '#94A3B8',
-  blue:   '#4F46E5',
-  teal:   '#06B6D4',
-  green:  '#10B981',
-  pink:   '#F43F5E',
-};
-Chart.defaults.font.family = "'DM Sans', system-ui, sans-serif";
-Chart.defaults.font.size = 12;
-Chart.defaults.color = CHART_COLORS.text;
-
-document.addEventListener('DOMContentLoaded', () => {
-  const pieLabels    = {{ pie_labels_json|safe }};
-  const pieValues    = {{ pie_values_json|safe }};
-  const resLabels    = {{ resource_labels_json|safe }};
-  const resDurations = {{ resource_durations_json|safe }};
-  const userLabels   = {{ user_labels_json|safe }};
-  const userDurations= {{ user_durations_json|safe }};
-  const hourLabels   = {{ hour_labels_json|safe }};
-  const hourCounts   = {{ hour_counts_json|safe }};
-
-  // Palette for pie
-  const palette = ['#4F46E5','#06B6D4','#10B981','#F59E0B','#F43F5E','#8B5CF6','#EC4899','#14B8A6'];
-
-  new Chart(document.getElementById('pieChart'), {
-    type: 'doughnut',
-    data: {
-      labels: pieLabels,
-      datasets: [{ data: pieValues, backgroundColor: pieLabels.map((_,i) => palette[i % palette.length]), borderWidth: 2, borderColor: '#fff' }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      cutout: '62%',
-      plugins: { legend: { position: 'bottom', labels: { padding: 16, boxWidth: 12 } } }
-    }
-  });
-
-  new Chart(document.getElementById('resourceDurationChart'), {
-    type: 'bar',
-    data: {
-      labels: resLabels,
-      datasets: [{ label: 'Hours', data: resDurations,
-        backgroundColor: CHART_COLORS.teal + 'cc', borderRadius: 6, borderSkipped: false }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { grid: { color: CHART_COLORS.grid } },
-        y: { beginAtZero: true, grid: { color: CHART_COLORS.grid }, title: { display: true, text: 'Hours' } }
-      }
-    }
-  });
-
-  new Chart(document.getElementById('topUsersChart'), {
-    type: 'bar',
-    data: {
-      labels: userLabels,
-      datasets: [{ label: 'Hours', data: userDurations,
-        backgroundColor: CHART_COLORS.blue + 'cc', borderRadius: 6, borderSkipped: false }]
-    },
-    options: {
-      indexAxis: 'y',
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { beginAtZero: true, grid: { color: CHART_COLORS.grid }, title: { display: true, text: 'Hours' } },
-        y: { grid: { display: false } }
-      }
-    }
-  });
-
-  new Chart(document.getElementById('hourChart'), {
-    type: 'line',
-    data: {
-      labels: hourLabels,
-      datasets: [{ label: 'Bookings', data: hourCounts, fill: true,
-        borderColor: CHART_COLORS.green, backgroundColor: CHART_COLORS.green + '22',
-        tension: 0.4, pointRadius: 4, pointBackgroundColor: CHART_COLORS.green }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { grid: { color: CHART_COLORS.grid }, title: { display: true, text: 'Hour of Day' } },
-        y: { beginAtZero: true, grid: { color: CHART_COLORS.grid }, title: { display: true, text: 'Count' } }
-      }
-    }
-  });
+const CC={grid:'#E2E8F0',text:'#94A3B8',blue:'#4F46E5',teal:'#06B6D4',green:'#10B981',pink:'#F43F5E'};
+Chart.defaults.font.family="'DM Sans',system-ui,sans-serif";Chart.defaults.font.size=12;Chart.defaults.color=CC.text;
+document.addEventListener('DOMContentLoaded',()=>{
+  const pal=['#4F46E5','#06B6D4','#10B981','#F59E0B','#F43F5E','#8B5CF6','#EC4899','#14B8A6'];
+  const pL={{ pie_labels_json|safe }},pV={{ pie_values_json|safe }};
+  const rL={{ resource_labels_json|safe }},rD={{ resource_durations_json|safe }};
+  const uL={{ user_labels_json|safe }},uD={{ user_durations_json|safe }};
+  const hL={{ hour_labels_json|safe }},hC={{ hour_counts_json|safe }};
+  new Chart(document.getElementById('pieChart'),{type:'doughnut',data:{labels:pL,datasets:[{data:pV,backgroundColor:pL.map((_,i)=>pal[i%pal.length]),borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{position:'bottom',labels:{padding:16,boxWidth:12}}}}});
+  new Chart(document.getElementById('resourceDurationChart'),{type:'bar',data:{labels:rL,datasets:[{label:'Hours',data:rD,backgroundColor:CC.teal+'cc',borderRadius:6,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:CC.grid}},y:{beginAtZero:true,grid:{color:CC.grid},title:{display:true,text:'Hours'}}}}});
+  new Chart(document.getElementById('topUsersChart'),{type:'bar',data:{labels:uL,datasets:[{label:'Hours',data:uD,backgroundColor:CC.blue+'cc',borderRadius:6,borderSkipped:false}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,grid:{color:CC.grid},title:{display:true,text:'Hours'}},y:{grid:{display:false}}}}});
+  new Chart(document.getElementById('hourChart'),{type:'line',data:{labels:hL,datasets:[{label:'Bookings',data:hC,fill:true,borderColor:CC.green,backgroundColor:CC.green+'22',tension:.4,pointRadius:4,pointBackgroundColor:CC.green}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:CC.grid},title:{display:true,text:'Hour of Day'}},y:{beginAtZero:true,grid:{color:CC.grid},title:{display:true,text:'Count'}}}}});
 });
 </script>
 {% endblock %}

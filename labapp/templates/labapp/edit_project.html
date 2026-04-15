@@ -1,0 +1,77 @@
+{% extends 'labapp/base.html' %}
+{% block title %}Edit {{ project.name }} | MI Lab{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Edit Project</h1>
+    <p class="page-subtitle">{{ project.name }}</p>
+  </div>
+  <a href="{% url 'projects_list' %}" class="btn btn-secondary"><i class="fa-solid fa-arrow-left me-2"></i>Back</a>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-body" style="padding:2rem;">
+        <form method="post">
+          {% csrf_token %}
+          {% if form.non_field_errors %}<div class="alert alert-danger mb-3">{{ form.non_field_errors }}</div>{% endif %}
+
+          <div class="mb-3">
+            <label class="form-label"><i class="fa-solid fa-folder me-1" style="color:var(--primary);"></i>Project Name <span style="color:var(--danger);">*</span></label>
+            {{ form.name }}{% if form.name.errors %}<div class="text-danger mt-1">{{ form.name.errors|striptags }}</div>{% endif %}
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label"><i class="fa-solid fa-user-tie me-1" style="color:var(--accent);"></i>Principal Investigator</label>
+              {{ form.principal_investigator }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label"><i class="fa-solid fa-tag me-1" style="color:var(--warning);"></i>Grant</label>
+              {{ form.grant }}
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label"><i class="fa-solid fa-users me-1" style="color:var(--info);"></i>Co-Principal Investigators</label>
+            {{ form.co_principal_investigators }}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label"><i class="fa-solid fa-user-graduate me-1" style="color:var(--success);"></i>Research Assistants</label>
+            {{ form.research_assistants }}
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-4">
+              <label class="form-label"><i class="fa-solid fa-circle-half-stroke me-1" style="color:var(--primary);"></i>Status</label>
+              {{ form.status }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label"><i class="fa-solid fa-calendar-day me-1" style="color:var(--success);"></i>Start Date</label>
+              {{ form.start_date }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label"><i class="fa-solid fa-flag-checkered me-1" style="color:var(--danger);"></i>Est. Completion</label>
+              {{ form.eta }}
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label"><i class="fa-solid fa-bangladeshi-taka-sign me-1" style="color:var(--warning);"></i>Estimated Budget (BDT)</label>
+            {{ form.estimated_budget_bdt }}
+          </div>
+
+          <div style="display:flex;gap:.75rem;justify-content:flex-end;">
+            <a href="{% url 'projects_list' %}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk me-2"></i>Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

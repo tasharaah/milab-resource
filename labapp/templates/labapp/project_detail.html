@@ -1,0 +1,116 @@
+{% extends 'labapp/base.html' %}
+{% block title %}{{ project.name }} | MI Lab{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <a href="{% url 'projects_list' %}" style="font-size:.82rem;color:var(--text-muted);display:inline-flex;align-items:center;gap:.4rem;margin-bottom:.5rem;">
+      <i class="fa-solid fa-arrow-left"></i>Back to Projects
+    </a>
+    <h1 class="page-title">{{ project.name }}</h1>
+  </div>
+  <div class="d-flex gap-2 align-items-center flex-wrap">
+    {% if project.status == 'ONGOING' %}<span class="badge bg-success" style="font-size:.85rem;padding:.4em .8em;">Ongoing</span>
+    {% elif project.status == 'COMPLETED' %}<span class="badge bg-secondary" style="font-size:.85rem;padding:.4em .8em;">Completed</span>
+    {% elif project.status == 'PROPOSED' %}<span class="badge bg-info" style="font-size:.85rem;padding:.4em .8em;">Proposed</span>
+    {% else %}<span class="badge bg-warning" style="font-size:.85rem;padding:.4em .8em;">Upcoming</span>{% endif %}
+    {% if user.is_staff or user.is_superuser or user.role == 'Faculty' %}
+    <a href="{% url 'edit_project' project.id %}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-pen me-1"></i>Edit</a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row g-3">
+  <!-- Left column: key details -->
+  <div class="col-lg-8">
+    <div class="card mb-3">
+      <div class="card-header"><i class="fa-solid fa-circle-info me-2" style="color:var(--primary);"></i>Project Details</div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-sm-6">
+            <p style="font-size:.72rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);margin:0 0 .25rem;">Principal Investigator</p>
+            <p style="font-weight:600;color:var(--text-primary);margin:0;">
+              {% if project.principal_investigator %}
+                {{ project.principal_investigator.get_full_name|default:project.principal_investigator.username }}
+              {% else %}—{% endif %}
+            </p>
+          </div>
+          <div class="col-sm-6">
+            <p style="font-size:.72rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);margin:0 0 .25rem;">Grant</p>
+            <p style="font-weight:500;color:var(--text-secondary);margin:0;">{{ project.grant|default:'—' }}</p>
+          </div>
+          <div class="col-sm-6">
+            <p style="font-size:.72rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);margin:0 0 .25rem;">Start Date</p>
+            <p style="color:var(--text-secondary);margin:0;">{{ project.start_date|date:"d M, Y"|default:'—' }}</p>
+          </div>
+          <div class="col-sm-6">
+            <p style="font-size:.72rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);margin:0 0 .25rem;">Estimated Completion</p>
+            <p style="color:var(--text-secondary);margin:0;">{{ project.eta|date:"d M, Y"|default:'—' }}</p>
+          </div>
+          <div class="col-sm-6">
+            <p style="font-size:.72rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);margin:0 0 .25rem;">Estimated Budget (BDT)</p>
+            <p style="font-weight:600;color:var(--text-primary);margin:0;">
+              {% if project.estimated_budget_bdt %}৳ {{ project.estimated_budget_bdt|floatformat:0 }}{% else %}—{% endif %}
+            </p>
+          </div>
+          <div class="col-sm-6">
+            <p style="font-size:.72rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);margin:0 0 .25rem;">Status</p>
+            <p style="color:var(--text-secondary);margin:0;">{{ project.get_status_display }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Co-PIs -->
+    <div class="card mb-3">
+      <div class="card-header"><i class="fa-solid fa-user-tie me-2" style="color:var(--accent);"></i>Co-Principal Investigators</div>
+      <div class="card-body">
+        {% with copis=project.co_principal_investigators.all %}
+        {% if copis %}
+          <div class="d-flex flex-wrap gap-2">
+            {% for copi in copis %}
+            <span style="background:var(--info-light);color:#1E40AF;border-radius:999px;padding:.3rem .8rem;font-size:.82rem;font-weight:500;">
+              {{ copi.get_full_name|default:copi.username }}
+            </span>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p style="color:var(--text-muted);margin:0;">No co-principal investigators assigned.</p>
+        {% endif %}
+        {% endwith %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Right column: RAs -->
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-header"><i class="fa-solid fa-users me-2" style="color:var(--success);"></i>Research Assistants</div>
+      <div class="card-body" style="padding:1rem 1.25rem;">
+        {% with ras=project.research_assistants.all %}
+        {% if ras %}
+          <div style="display:flex;flex-direction:column;gap:.5rem;">
+            {% for ra in ras %}
+            <div style="display:flex;align-items:center;gap:.65rem;padding:.5rem .75rem;background:var(--surface-2);border-radius:var(--radius-sm);border:1px solid var(--border);">
+              <div style="width:30px;height:30px;background:var(--primary-light);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <i class="fa-solid fa-user" style="font-size:.65rem;color:var(--primary);"></i>
+              </div>
+              <div style="min-width:0;">
+                <p style="font-size:.83rem;font-weight:600;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                  {{ ra.get_full_name|default:ra.username }}
+                </p>
+                <p style="font-size:.72rem;color:var(--text-muted);margin:0;">{{ ra.role }}</p>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p style="color:var(--text-muted);font-size:.875rem;margin:0;">No research assistants assigned.</p>
+        {% endif %}
+        {% endwith %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

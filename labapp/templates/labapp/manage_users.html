@@ -1,6 +1,5 @@
 {% extends 'labapp/base.html' %}
 {% block title %}Manage Users | MI Lab{% endblock %}
-
 {% block content %}
 
 <div class="page-header">
@@ -8,17 +7,16 @@
     <h1 class="page-title">Manage Users</h1>
     <p class="page-subtitle">View, filter, and manage lab members</p>
   </div>
-  <a href="{% url 'registration_requests_admin' %}" class="btn btn-secondary">
-    <i class="fa-solid fa-user-clock me-2"></i>Registration Requests
+  <a href="{% url 'user_invitations' %}" class="btn btn-primary">
+    <i class="fa-solid fa-envelope-open-text me-2"></i>User Invitations
   </a>
 </div>
 
-<!-- Filter bar -->
 <div class="filter-bar">
   <form method="get" class="d-flex align-items-end gap-3 flex-wrap w-100">
     <div>
       <label class="form-label">Filter by Role</label>
-      <select id="roleFilter" name="role" class="form-select" onchange="this.form.submit()">
+      <select name="role" class="form-select" onchange="this.form.submit()">
         {% for value, label in roles_for_filter %}
           <option value="{{ value }}" {% if selected_role == value %}selected{% endif %}>{{ label }}</option>
         {% endfor %}
@@ -33,54 +31,31 @@
     <table class="table">
       <thead>
         <tr>
-          <th>Username</th>
-          <th>Full Name</th>
-          <th>Role</th>
-          <th>Email</th>
-          <th>Phone</th>
-          <th>Contact</th>
-          <th>Action</th>
+          <th>Username</th><th>Full Name</th><th>Role</th><th>Email</th><th>Phone</th><th>Contact</th><th>Action</th>
         </tr>
       </thead>
       <tbody>
         {% for u in users %}
         <tr>
-          <td style="font-weight:600; color:var(--text-primary);">{{ u.username }}</td>
+          <td style="font-weight:600;color:var(--text-primary);">{{ u.username }}</td>
           <td>{{ u.get_full_name|default:u.username }}</td>
           <td>
-            <span class="badge
-              {% if u.role == 'Faculty' %}bg-primary
-              {% elif u.role == 'RA' %}bg-info
-              {% elif u.role == 'Student' %}bg-success
-              {% else %}bg-secondary{% endif %}">
+            <span class="badge {% if u.role == 'Faculty' %}bg-primary{% elif u.role == 'RA' %}bg-info{% elif u.role == 'Student' %}bg-success{% else %}bg-secondary{% endif %}">
               {{ u.role }}
             </span>
           </td>
-          <td style="font-size:.82rem; color:var(--text-secondary);">{{ u.email }}</td>
-          <td style="font-size:.82rem; color:var(--text-muted);">{{ u.phone|default:'—' }}</td>
+          <td style="font-size:.82rem;color:var(--text-secondary);">{{ u.email }}</td>
+          <td style="font-size:.82rem;color:var(--text-muted);">{{ u.phone|default:'—' }}</td>
           <td>
             <div class="d-flex gap-2 align-items-center">
-              {% if u.phone %}
-              <a href="https://wa.me/{{ u.phone|urlencode }}" target="_blank"
-                 style="color:#25D366; font-size:1.1rem;" title="WhatsApp">
-                <i class="fa-brands fa-whatsapp"></i>
-              </a>
-              {% endif %}
-              {% if u.email %}
-              <a href="mailto:{{ u.email }}"
-                 style="color:var(--primary); font-size:1rem;" title="Email">
-                <i class="fa-solid fa-envelope"></i>
-              </a>
-              {% endif %}
+              {% if u.phone %}<a href="https://wa.me/{{ u.phone|urlencode }}" target="_blank" style="color:#25D366;font-size:1.1rem;" title="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>{% endif %}
+              {% if u.email %}<a href="mailto:{{ u.email }}" style="color:var(--primary);font-size:1rem;" title="Email"><i class="fa-solid fa-envelope"></i></a>{% endif %}
             </div>
           </td>
           <td>
-            <form method="post" action="{% url 'delete_user' u.id %}"
-                  onsubmit="return confirm('Delete user {{ u.username }}? This cannot be undone.');">
+            <form method="post" action="{% url 'delete_user' u.id %}" onsubmit="return confirm('Delete user {{ u.username }}?');">
               {% csrf_token %}
-              <button type="submit" class="btn btn-sm btn-danger">
-                <i class="fa-solid fa-trash me-1"></i>Delete
-              </button>
+              <button type="submit" class="btn btn-sm btn-danger"><i class="fa-solid fa-trash me-1"></i>Delete</button>
             </form>
           </td>
         </tr>
@@ -90,12 +65,7 @@
   </div>
 </div>
 {% else %}
-<div class="card">
-  <div class="empty-state">
-    <i class="fa-solid fa-users"></i>
-    <p>No users found for this role.</p>
-  </div>
-</div>
+<div class="card"><div class="empty-state"><i class="fa-solid fa-users"></i><p>No users found for this role.</p></div></div>
 {% endif %}
 
 {% endblock %}

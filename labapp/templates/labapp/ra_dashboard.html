@@ -22,12 +22,12 @@
 
 <!-- Stat Cards -->
 <div class="row g-3 mb-4">
-  <div class="col-md-4">
+  <div class="col-4">
     <a href="{% url 'list_resources' %}" class="text-decoration-none">
       <div class="stat-card">
         <div class="stat-top">
           <div class="stat-icon bg-primary"><i class="fa fa-server"></i></div>
-          <div>
+          <div class="stat-text">
             <div class="stat-label">Total Resources</div>
             <div class="stat-value">{{ total_resources }}</div>
           </div>
@@ -35,12 +35,12 @@
       </div>
     </a>
   </div>
-  <div class="col-md-4">
+  <div class="col-4">
     <a href="{% url 'available_resources' %}" class="text-decoration-none">
       <div class="stat-card">
         <div class="stat-top">
           <div class="stat-icon bg-success"><i class="fa fa-circle-check"></i></div>
-          <div>
+          <div class="stat-text">
             <div class="stat-label">Available Now</div>
             <div class="stat-value">{{ available_resources }}</div>
           </div>
@@ -48,12 +48,12 @@
       </div>
     </a>
   </div>
-  <div class="col-md-4">
+  <div class="col-4">
     <a href="{% url 'my_bookings' %}" class="text-decoration-none">
       <div class="stat-card">
         <div class="stat-top">
           <div class="stat-icon bg-warning"><i class="fa fa-bolt"></i></div>
-          <div>
+          <div class="stat-text">
             <div class="stat-label">My Active</div>
             <div class="stat-value">{{ my_active_bookings|length }}</div>
           </div>
@@ -63,7 +63,7 @@
   </div>
 </div>
 
-<!-- Active Bookings Table -->
+<!-- Active Bookings -->
 <div class="section-title"><i class="fa-solid fa-bolt text-warning"></i> Your Active Bookings</div>
 
 {% if my_active_bookings %}
@@ -74,9 +74,9 @@
         <tr>
           <th>Resource</th>
           <th>GPU</th>
-          <th>Software</th>
           <th>Start</th>
           <th>End</th>
+          <th>Project</th>
           <th>Action</th>
         </tr>
       </thead>
@@ -84,14 +84,17 @@
         {% for booking in my_active_bookings %}
         <tr>
           <td><strong style="color:var(--text-primary);">{{ booking.resource.name }}</strong></td>
-          <td><span class="badge bg-info">{{ booking.resource.gpu|default:'—' }}</span></td>
-          <td>{{ booking.software|default:'—' }}</td>
-          <td style="color:var(--text-muted); font-size:.82rem;">{{ booking.start_time|date:'d M, Y h:i A' }}</td>
-          <td style="color:var(--text-muted); font-size:.82rem;">{{ booking.end_time|date:'d M, Y h:i A' }}</td>
+          <td>
+            {% if booking.resource.gpu %}<span class="badge bg-info">{{ booking.resource.gpu }}</span>
+            {% else %}<span style="color:var(--text-muted);">—</span>{% endif %}
+          </td>
+          <td style="color:var(--text-muted);font-size:.82rem;">{{ booking.start_time|date:'d M, Y h:i A' }}</td>
+          <td style="color:var(--text-muted);font-size:.82rem;">{{ booking.end_time|date:'d M, Y h:i A' }}</td>
+          <td style="color:var(--text-muted);font-size:.82rem;">{{ booking.project_name|default:'—' }}</td>
           <td>
             <a href="{% url 'release_booking' booking.id %}"
                class="btn btn-sm btn-danger"
-               onclick="return confirm('Are you sure you want to release this resource?');">
+               onclick="return confirm('Release this resource?');">
               <i class="fa-solid fa-stop me-1"></i>Release
             </a>
           </td>

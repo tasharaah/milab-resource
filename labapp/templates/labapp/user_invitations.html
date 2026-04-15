@@ -1,0 +1,107 @@
+{% extends 'labapp/base.html' %}
+{% block title %}User Invitations | MI Lab{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">User Invitations</h1>
+    <p class="page-subtitle">Invite new users to register — links expire after 48 hours</p>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Send Invite Form -->
+  <div class="col-lg-4">
+    <div class="card" style="position:sticky;top:80px;">
+      <div class="card-header">
+        <i class="fa-solid fa-envelope-open-text me-2" style="color:var(--primary);"></i>Send Invitation
+      </div>
+      <div class="card-body" style="padding:1.5rem;">
+        <form method="post">
+          {% csrf_token %}
+          {% if form.errors %}
+            <div class="alert alert-danger mb-3">
+              {% for field, errs in form.errors.items %}
+                {% for e in errs %}<div>{{ e }}</div>{% endfor %}
+              {% endfor %}
+            </div>
+          {% endif %}
+
+          <div class="mb-3">
+            <label class="form-label"><i class="fa-solid fa-envelope me-1"></i>Email Address</label>
+            {{ form.email }}
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label"><i class="fa-solid fa-id-badge me-1"></i>Role</label>
+            {{ form.role }}
+          </div>
+
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="fa-solid fa-paper-plane me-2"></i>Send Invitation
+          </button>
+        </form>
+
+        <div style="margin-top:1rem;padding:.85rem;background:var(--info-light);border-radius:var(--radius);font-size:.8rem;color:#1E40AF;line-height:1.5;">
+          <i class="fa-solid fa-circle-info me-1"></i>
+          The invitee will receive an email with a registration link valid for <strong>48 hours</strong>.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pending Invitations -->
+  <div class="col-lg-8">
+    <div class="section-title"><i class="fa-solid fa-clock me-1"></i> Pending Invitations</div>
+
+    {% if invitations %}
+    <div class="data-table-wrap">
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Sent By</th>
+              <th>Sent At</th>
+              <th>Expires</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for inv in invitations %}
+            <tr>
+              <td style="font-weight:500;color:var(--text-primary);">{{ inv.email }}</td>
+              <td><span class="badge {% if inv.role == 'Faculty' %}bg-primary{% elif inv.role == 'RA' %}bg-info{% else %}bg-secondary{% endif %}">{{ inv.get_role_display }}</span></td>
+              <td style="font-size:.82rem;color:var(--text-muted);">
+                {% if inv.created_by %}{{ inv.created_by.get_full_name|default:inv.created_by.username }}{% else %}—{% endif %}
+              </td>
+              <td style="font-size:.82rem;color:var(--text-muted);">{{ inv.created_at|date:'d M, Y h:i A' }}</td>
+              <td style="font-size:.82rem;color:var(--text-muted);">{{ inv.expires_at|date:'d M, Y h:i A' }}</td>
+              <td>
+                {% if inv.used %}
+                  <span class="badge bg-secondary">Used</span>
+                {% elif inv.is_expired %}
+                  <span class="badge bg-danger">Expired</span>
+                {% else %}
+                  <span class="badge bg-success"><i class="fa-solid fa-circle-dot me-1" style="font-size:.6rem;"></i>Pending</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% else %}
+    <div class="card">
+      <div class="empty-state">
+        <i class="fa-solid fa-envelope-open-text"></i>
+        <p>No active invitations.</p>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}
