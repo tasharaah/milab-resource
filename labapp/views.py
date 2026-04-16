@@ -34,6 +34,7 @@ from reportlab.platypus import (
     PageBreak, Image as RLImage, HRFlowable,
 )
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+from django.utils.html import strip_tags
 
 from .models import (
     Booking, Resource, RegistrationRequest, Project, UserInvitation,
@@ -1057,12 +1058,14 @@ def add_announcement(request):
         recipients = list(User.objects.filter(is_active=True).exclude(email='').values_list('email', flat=True))
         if recipients:
             try:
-                plain = f"{ann.title}\n\n{ann.content}\n\n— MI Lab, NSU"
+                plain = f"{ann.title}\n\n{strip_tags(ann.content)}\n\n— MI Lab, NSU"
+
                 send_mail(
                     subject=f'MI Lab Announcement: {ann.title}',
                     message=plain,
                     from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=recipients, fail_silently=True,
+                    recipient_list=recipients,
+                    fail_silently=True,
                 )
             except Exception:
                 pass
