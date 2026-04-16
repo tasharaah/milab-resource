@@ -1,0 +1,132 @@
+{% extends 'labapp/base.html' %}
+{% block title %}Manage Resources | MI Lab{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Manage Resources</h1>
+    <p class="page-subtitle">Add, edit, and control lab resource availability</p>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Add Form -->
+  <div class="col-lg-4">
+    <div class="card" style="position:sticky;top:80px;">
+      <div class="card-header">
+        <i class="fa-solid fa-plus-circle me-2" style="color:var(--primary);"></i>Add New Resource
+      </div>
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger mb-3">{{ form.non_field_errors }}</div>
+          {% endif %}
+
+          <div class="mb-3">
+            <label class="form-label">Resource Name <span style="color:var(--danger);">*</span></label>
+            {{ form.name }}
+            {% if form.name.errors %}
+              <div class="text-danger mt-1">{{ form.name.errors|striptags }}</div>
+            {% endif %}
+            <p class="form-text">Name will be auto-capitalized. Must be unique.</p>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Type <span style="color:var(--danger);">*</span></label>
+            {{ form.resource_type }}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Status</label>
+            {{ form.status }}
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label">Description <span style="font-weight:400;color:var(--text-muted);">(optional)</span></label>
+            {{ form.description }}
+          </div>
+
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="fa-solid fa-plus me-2"></i>Add Resource
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Existing Resources -->
+  <div class="col-lg-8">
+    <div class="section-title"><i class="fa-solid fa-server me-1"></i> Existing Resources</div>
+
+    {% if resources %}
+    <div class="data-table-wrap">
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Type</th>
+              <th>Status</th>
+              <th>Description</th>
+              <th>Change Status</th>
+              <th>Delete</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in resources %}
+            <tr>
+              <td style="font-weight:600;color:var(--text-primary);">{{ r.name }}</td>
+              <td>
+                <span class="badge {% if r.resource_type == 'PC' %}bg-info{% else %}bg-primary{% endif %}">
+                  {{ r.get_resource_type_display }}
+                </span>
+              </td>
+              <td>
+                {% if r.status == 'OK' %}<span class="badge bg-success">OK</span>
+                {% elif r.status == 'MAINTENANCE' %}<span class="badge bg-warning">Maintenance</span>
+                {% else %}<span class="badge bg-secondary">Disabled</span>{% endif %}
+              </td>
+              <td style="color:var(--text-muted);font-size:.82rem;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                {{ r.description|default:'—' }}
+              </td>
+              <td>
+                <form method="post" action="{% url 'update_resource' r.id %}"
+                      class="d-flex align-items-center gap-2" style="min-width:180px;">
+                  {% csrf_token %}
+                  <select name="status" class="form-select form-select-sm">
+                    <option value="OK"          {% if r.status == 'OK' %}selected{% endif %}>OK</option>
+                    <option value="MAINTENANCE" {% if r.status == 'MAINTENANCE' %}selected{% endif %}>Maintenance</option>
+                    <option value="DISABLED"    {% if r.status == 'DISABLED' %}selected{% endif %}>Disabled</option>
+                  </select>
+                  <button type="submit" class="btn btn-sm btn-secondary" style="white-space:nowrap;">Save</button>
+                </form>
+              </td>
+              <td>
+                <form method="post" action="{% url 'delete_resource' r.id %}"
+                      onsubmit="return confirm('Delete {{ r.name }}? This cannot be undone.');">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-sm btn-danger">
+                    <i class="fa-solid fa-trash"></i>
+                  </button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% else %}
+    <div class="card">
+      <div class="empty-state">
+        <i class="fa-solid fa-server"></i>
+        <p>No resources added yet.</p>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}
