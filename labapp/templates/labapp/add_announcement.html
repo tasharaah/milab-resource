@@ -1,5 +1,5 @@
 {% extends 'labapp/base.html' %}
-{% block title %}Post Announcement | MI Lab{% endblock %}
+{% block title %}{% if editing %}Edit{% else %}Post{% endif %} Announcement | MI Lab{% endblock %}
 
 {% block extra_head %}
   <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
@@ -9,8 +9,8 @@
 
 <div class="page-header">
   <div>
-    <h1 class="page-title">Post Announcement</h1>
-    <p class="page-subtitle">Share important news with the lab</p>
+    <h1 class="page-title">{% if editing %}Edit Announcement{% else %}Post Announcement{% endif %}</h1>
+    <p class="page-subtitle">{% if editing %}Update the announcement details{% else %}Share important news with the lab{% endif %}</p>
   </div>
   <a href="{% url 'announcements' %}" class="btn btn-secondary">
     <i class="fa-solid fa-arrow-left me-2"></i>Back
@@ -26,24 +26,28 @@
           {{ form.non_field_errors }}
 
           <div class="mb-4">
-            <label for="id_title" class="form-label">
-              <i class="fa-solid fa-heading me-1" style="color:var(--primary);"></i>Title
-            </label>
+            <label for="id_title" class="form-label"><i class="fa-solid fa-heading me-1" style="color:var(--primary);"></i>Title</label>
             {{ form.title }}
           </div>
 
           <div class="mb-4">
-            <label class="form-label">
-              <i class="fa-solid fa-align-left me-1" style="color:var(--accent);"></i>Content
-            </label>
-            <div id="annEditor" style="height:280px; background:var(--surface); border-radius:0 0 var(--radius-sm) var(--radius-sm);"></div>
+            <label class="form-label"><i class="fa-solid fa-align-left me-1" style="color:var(--accent);"></i>Content</label>
+            <div id="annEditor" style="height:280px;background:var(--surface);border-radius:0 0 var(--radius-sm) var(--radius-sm);"></div>
             <div style="display:none;">{{ form.content }}</div>
           </div>
 
-          <div style="display:flex; gap:.75rem; justify-content:flex-end;">
+          {% if not editing %}
+          <div style="padding:.75rem 1rem;background:var(--info-light);border-radius:var(--radius);font-size:.82rem;color:#1E40AF;margin-bottom:1.25rem;">
+            <i class="fa-solid fa-circle-info me-1"></i>
+            This announcement will be <strong>emailed to all users</strong> when posted.
+          </div>
+          {% endif %}
+
+          <div style="display:flex;gap:.75rem;justify-content:flex-end;">
             <a href="{% url 'announcements' %}" class="btn btn-secondary">Cancel</a>
             <button type="submit" class="btn btn-primary">
-              <i class="fa-solid fa-bullhorn me-2"></i>Post Announcement
+              <i class="fa-solid fa-{% if editing %}floppy-disk{% else %}bullhorn{% endif %} me-2"></i>
+              {% if editing %}Save Changes{% else %}Post Announcement{% endif %}
             </button>
           </div>
         </form>
@@ -59,15 +63,12 @@
 <script>
   const ann = new Quill('#annEditor', {
     theme: 'snow',
-    modules: {
-      toolbar: [
-        [{ header: [1,2,3,false] }],
-        ['bold','italic','underline','strike'],
-        [{ list:'ordered' },{ list:'bullet' }],
-        ['clean']
-      ]
-    }
+    modules: { toolbar: [[{header:[1,2,3,false]}],['bold','italic','underline','strike'],[{list:'ordered'},{list:'bullet'}],['clean']] }
   });
+  // Pre-fill content when editing
+  {% if editing and ann %}
+  ann.root.innerHTML = document.getElementById('id_content').value || '';
+  {% endif %}
   document.getElementById('announcementForm').addEventListener('submit', function() {
     document.getElementById('id_content').value = ann.root.innerHTML;
   });

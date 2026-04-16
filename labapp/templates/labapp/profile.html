@@ -1,0 +1,186 @@
+{% extends 'labapp/base.html' %}
+{% block title %}{{ profile_user.get_full_name|default:profile_user.username }} | Profile | MI Lab{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ profile_user.get_full_name|default:profile_user.username }}</h1>
+    <p class="page-subtitle">
+      {% if profile_user.is_staff or profile_user.is_superuser %}Admin{% else %}{{ profile_user.role }}{% endif %}
+      · MI Lab, North South University
+    </p>
+  </div>
+  {% if is_own %}
+  <a href="{% url 'edit_profile' %}" class="btn btn-primary">
+    <i class="fa-solid fa-pen me-2"></i>Edit Profile
+  </a>
+  {% endif %}
+</div>
+
+<div class="row g-3">
+  <!-- Left: personal info -->
+  <div class="col-lg-4">
+    <div class="card mb-3">
+      <div class="card-body" style="padding:1.5rem;text-align:center;">
+        <!-- Avatar -->
+        <div style="width:72px;height:72px;background:var(--primary-light);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;font-family:'Outfit',sans-serif;font-size:1.6rem;font-weight:800;color:var(--primary);">
+          {{ profile_user.get_full_name|default:profile_user.username|first|upper }}
+        </div>
+        <h2 style="font-size:1.1rem;font-weight:700;margin:0 0 .2rem;">
+          {{ profile_user.get_full_name|default:profile_user.username }}
+        </h2>
+        <p style="font-size:.82rem;color:var(--text-muted);margin:0 0 1rem;">@{{ profile_user.username }}</p>
+        {% if profile_user.bio %}
+        <p style="font-size:.875rem;color:var(--text-secondary);line-height:1.6;margin:0;text-align:left;padding:.75rem;background:var(--surface-2);border-radius:var(--radius-sm);">
+          {{ profile_user.bio }}
+        </p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-header"><i class="fa-solid fa-address-card me-2" style="color:var(--accent);"></i>Contact Info</div>
+      <div class="card-body" style="padding:1.25rem;">
+        <div style="display:flex;flex-direction:column;gap:.75rem;">
+          <div>
+            <p style="font-size:.72rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--text-muted);margin:0 0 .15rem;">Email</p>
+            <a href="mailto:{{ profile_user.email }}" style="font-size:.875rem;color:var(--primary);">{{ profile_user.email|default:'—' }}</a>
+          </div>
+          <div>
+            <p style="font-size:.72rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--text-muted);margin:0 0 .15rem;">Phone</p>
+            {% if profile_user.phone %}
+            <div style="display:flex;align-items:center;gap:.5rem;">
+              <span style="font-size:.875rem;">{{ profile_user.phone }}</span>
+              <a href="https://wa.me/{{ profile_user.phone|urlencode }}" target="_blank" style="color:#25D366;" title="WhatsApp">
+                <i class="fa-brands fa-whatsapp"></i>
+              </a>
+            </div>
+            {% else %}<span style="font-size:.875rem;color:var(--text-muted);">—</span>{% endif %}
+          </div>
+          <div>
+            <p style="font-size:.72rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--text-muted);margin:0 0 .15rem;">Role</p>
+            <span class="badge {% if profile_user.role == 'Faculty' %}bg-primary{% elif profile_user.role == 'RA' %}bg-info{% elif profile_user.role == 'Student' %}bg-success{% else %}bg-secondary{% endif %}">
+              {{ profile_user.role }}
+            </span>
+          </div>
+          <div>
+            <p style="font-size:.72rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--text-muted);margin:0 0 .15rem;">Member Since</p>
+            <span style="font-size:.875rem;color:var(--text-secondary);">{{ profile_user.date_joined|date:'d M Y' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: works -->
+  <div class="col-lg-8">
+
+    <!-- PI Projects -->
+    {% if pi_projects %}
+    <div class="section-title"><i class="fa-solid fa-user-tie me-1" style="color:var(--primary);"></i> Principal Investigator</div>
+    <div class="row g-2 mb-4">
+      {% for p in pi_projects %}
+      <div class="col-md-6">
+        <a href="{% url 'project_detail' p.id %}" class="text-decoration-none">
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.25rem;transition:box-shadow var(--transition);" onmouseenter="this.style.boxShadow='var(--shadow-md)'" onmouseleave="this.style.boxShadow='none'">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem;">
+              <p style="font-weight:700;font-size:.9rem;color:var(--text-primary);margin:0 0 .3rem;line-height:1.3;">{{ p.name }}</p>
+              {% if p.status == 'ONGOING' %}<span class="badge bg-success">Ongoing</span>
+              {% elif p.status == 'COMPLETED' %}<span class="badge bg-secondary">Completed</span>
+              {% elif p.status == 'PROPOSED' %}<span class="badge bg-info">Proposed</span>
+              {% else %}<span class="badge bg-warning">Upcoming</span>{% endif %}
+            </div>
+            {% if p.grant %}<p style="font-size:.78rem;color:var(--text-muted);margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ p.grant }}</p>{% endif %}
+          </div>
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Co-PI Projects -->
+    {% if copi_projects %}
+    <div class="section-title"><i class="fa-solid fa-users me-1" style="color:var(--accent);"></i> Co-Principal Investigator</div>
+    <div class="row g-2 mb-4">
+      {% for p in copi_projects %}
+      <div class="col-md-6">
+        <a href="{% url 'project_detail' p.id %}" class="text-decoration-none">
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.25rem;transition:box-shadow var(--transition);" onmouseenter="this.style.boxShadow='var(--shadow-md)'" onmouseleave="this.style.boxShadow='none'">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem;">
+              <p style="font-weight:700;font-size:.9rem;color:var(--text-primary);margin:0 0 .3rem;line-height:1.3;">{{ p.name }}</p>
+              {% if p.status == 'ONGOING' %}<span class="badge bg-success">Ongoing</span>
+              {% elif p.status == 'COMPLETED' %}<span class="badge bg-secondary">Completed</span>
+              {% elif p.status == 'PROPOSED' %}<span class="badge bg-info">Proposed</span>
+              {% else %}<span class="badge bg-warning">Upcoming</span>{% endif %}
+            </div>
+            <p style="font-size:.78rem;color:var(--text-muted);margin:.2rem 0 0;">PI: {{ p.principal_investigator.get_full_name|default:p.principal_investigator.username|default:'—' }}</p>
+          </div>
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- RA Projects -->
+    {% if ra_projects %}
+    <div class="section-title"><i class="fa-solid fa-flask me-1" style="color:var(--success);"></i> Research Assistant</div>
+    <div class="row g-2 mb-4">
+      {% for p in ra_projects %}
+      <div class="col-md-6">
+        <a href="{% url 'project_detail' p.id %}" class="text-decoration-none">
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.25rem;transition:box-shadow var(--transition);" onmouseenter="this.style.boxShadow='var(--shadow-md)'" onmouseleave="this.style.boxShadow='none'">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem;">
+              <p style="font-weight:700;font-size:.9rem;color:var(--text-primary);margin:0 0 .3rem;line-height:1.3;">{{ p.name }}</p>
+              {% if p.status == 'ONGOING' %}<span class="badge bg-success">Ongoing</span>
+              {% elif p.status == 'COMPLETED' %}<span class="badge bg-secondary">Completed</span>
+              {% elif p.status == 'PROPOSED' %}<span class="badge bg-info">Proposed</span>
+              {% else %}<span class="badge bg-warning">Upcoming</span>{% endif %}
+            </div>
+            <p style="font-size:.78rem;color:var(--text-muted);margin:.2rem 0 0;">PI: {{ p.principal_investigator.get_full_name|default:p.principal_investigator.username|default:'—' }}</p>
+          </div>
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if not pi_projects and not copi_projects and not ra_projects %}
+    <div class="card mb-4">
+      <div class="empty-state" style="padding:2.5rem;">
+        <i class="fa-solid fa-diagram-project"></i>
+        <p>Not assigned to any projects yet.</p>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Recent Bookings -->
+    {% if recent_bookings %}
+    <div class="section-title"><i class="fa-solid fa-clock-rotate-left me-1" style="color:var(--warning);"></i> Recent Resource Usage</div>
+    <div class="data-table-wrap">
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr><th>Resource</th><th>Project</th><th>Start</th><th>End</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            {% for b in recent_bookings %}
+            <tr>
+              <td style="font-weight:500;color:var(--text-primary);">{{ b.resource.name }}</td>
+              <td style="color:var(--text-muted);font-size:.82rem;">{{ b.project_name|default:'—' }}</td>
+              <td style="color:var(--text-muted);font-size:.82rem;">{{ b.start_time|date:'d M, Y h:i A' }}</td>
+              <td style="color:var(--text-muted);font-size:.82rem;">{{ b.end_time|date:'d M, Y h:i A' }}</td>
+              <td>
+                {% if b.currently_active %}<span class="badge bg-success"><i class="fa-solid fa-circle-dot me-1" style="font-size:.6rem;"></i>Active</span>
+                {% else %}<span class="badge bg-secondary">Ended</span>{% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

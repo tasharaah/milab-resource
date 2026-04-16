@@ -12,20 +12,15 @@ from django.contrib.auth.hashers import make_password
 
 
 class User(AbstractUser):
-    """Custom user model with a role field."""
-
     class Role(models.TextChoices):
         RA      = 'RA',      'Research Assistant'
         STUDENT = 'Student', 'Student'
         INTERN  = 'Intern',  'Intern'
         FACULTY = 'Faculty', 'Faculty'
 
-    role = models.CharField(
-        max_length=10,
-        choices=Role.choices,
-        default=Role.RA,
-    )
+    role  = models.CharField(max_length=10, choices=Role.choices, default=Role.RA)
     phone = models.CharField(max_length=20, blank=True)
+    bio   = models.TextField(blank=True, help_text='Short bio or description')
 
     def is_ra(self)      -> bool: return self.role == self.Role.RA
     def is_student(self) -> bool: return self.role == self.Role.STUDENT
@@ -37,8 +32,6 @@ class User(AbstractUser):
 
 
 class Resource(models.Model):
-    """A physical or virtual lab resource."""
-
     class ResourceType(models.TextChoices):
         PC     = 'PC',     'PC'
         RUNPOD = 'RUNPOD', 'RunPod'
@@ -53,6 +46,12 @@ class Resource(models.Model):
     status        = models.CharField(max_length=20, choices=Status.choices, default=Status.OK)
     description   = models.TextField(blank=True)
 
+    def save(self, *args, **kwargs):
+        # Always title-case the name before saving
+        if self.name:
+            self.name = self.name.strip().title()
+        super().save(*args, **kwargs)
+
     def __str__(self) -> str:
         return self.name
 
@@ -62,38 +61,28 @@ class Resource(models.Model):
             return False
         now = timezone.now()
         return not self.bookings.filter(
-            is_active=True,
-            start_time__lte=now,
-            end_time__gte=now,
+            is_active=True, start_time__lte=now, end_time__gte=now,
         ).exists()
 
 
 class Project(models.Model):
-    """A research project tracked in the lab."""
-
     class Status(models.TextChoices):
         UPCOMING  = 'UPCOMING',  'Upcoming'
         PROPOSED  = 'PROPOSED',  'Proposed'
         ONGOING   = 'ONGOING',   'Ongoing'
         COMPLETED = 'COMPLETED', 'Completed'
 
-    name                     = models.CharField(max_length=200, unique=True)
-    principal_investigator   = models.ForeignKey(
-        User, on_delete=models.SET_NULL, null=True, blank=True,
-        related_name='pi_projects',
-    )
-    co_principal_investigators = models.ManyToManyField(
-        User, blank=True, related_name='co_pi_projects',
-    )
-    research_assistants      = models.ManyToManyField(
-        User, blank=True, related_name='ra_projects',
-    )
-    grant                    = models.CharField(max_length=300, blank=True)
-    status                   = models.CharField(max_length=20, choices=Status.choices, default=Status.PROPOSED)
-    start_date               = models.DateField(null=True, blank=True)
-    estimated_budget_bdt     = models.BigIntegerField(null=True, blank=True)
-    eta                      = models.DateField(null=True, blank=True, verbose_name='Estimated Completion')
-    created_at               = models.DateTimeField(auto_now_add=True)
+    name                       = models.CharField(max_length=200, unique=True)
+    principal_investigator     = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name='pi_projects')
+    co_principal_investigators = models.ManyToManyField(User, blank=True, related_name='co_pi_projects')
+    research_assistants        = models.ManyToManyField(User, blank=True, related_name='ra_projects')
+    grant                      = models.CharField(max_length=300, blank=True)
+    status                     = models.CharField(max_length=20, choices=Status.choices, default=Status.PROPOSED)
+    start_date                 = models.DateField(null=True, blank=True)
+    estimated_budget_bdt       = models.BigIntegerField(null=True, blank=True)
+    eta                        = models.DateField(null=True, blank=True, verbose_name='Estimated Completion')
+    created_at                 = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ['name']
@@ -101,31 +90,90 @@ class Project(models.Model):
     def __str__(self) -> str:
         return self.name
 
+    def is_member(self, user) -> bool:
+        """Return True if user has any role in this project."""
+        if user.is_staff or user.is_superuser:
+            return True
+        if self.principal_investigator == user:
+            return True
+        if self.co_principal_investigators.filter(pk=user.pk).exists():
+            return True
+        if self.research_assistants.filter(pk=user.pk).exists():
+            return True
+        return False
+
+    def can_edit_links(self, user) -> bool:
+        """Only PI, co-PI, or admin can edit collaboration links."""
+        if user.is_staff or user.is_superuser:
+            return True
+        if self.principal_investigator == user:
+            return True
+        if self.co_principal_investigators.filter(pk=user.pk).exists():
+            return True
+        return False
+
+
+class ProjectLink(models.Model):
+    """A collaboration link attached to a project (Overleaf, Drive, etc.)."""
+
+    PLATFORM_CHOICES = [
+        ('overleaf',    'Overleaf'),
+        ('google_doc',  'Google Doc'),
+        ('drive',       'Google Drive'),
+        ('notion',      'Notion'),
+        ('github',      'GitHub'),
+        ('other',       'Other'),
+    ]
+    PLATFORM_ICONS = {
+        'overleaf':   'fa-leaf',
+        'google_doc': 'fa-file-word',
+        'drive':      'fa-hard-drive',
+        'notion':     'fa-n',
+        'github':     'fa-brands fa-github',
+        'other':      'fa-link',
+    }
+
+    project  = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='links')
+    platform = models.CharField(max_length=20, choices=PLATFORM_CHOICES, default='other')
+    url      = models.URLField(max_length=500)
+    label    = models.CharField(max_length=100, blank=True, help_text='Optional display label')
+    added_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='added_links')
+    added_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['platform', 'id']
+
+    def __str__(self) -> str:
+        return f"{self.get_platform_display()} – {self.project.name}"
+
+    @property
+    def display_label(self) -> str:
+        return self.label or self.get_platform_display()
+
+    @property
+    def icon_class(self) -> str:
+        return self.PLATFORM_ICONS.get(self.platform, 'fa-link')
+
 
 class Booking(models.Model):
-    """A time-bounded reservation of a resource."""
-
-    user        = models.ForeignKey(User, on_delete=models.CASCADE, related_name='bookings')
-    resource    = models.ForeignKey(Resource, on_delete=models.CASCADE, related_name='bookings')
-    start_time  = models.DateTimeField()
-    end_time    = models.DateTimeField()
+    user         = models.ForeignKey(User, on_delete=models.CASCADE, related_name='bookings')
+    resource     = models.ForeignKey(Resource, on_delete=models.CASCADE, related_name='bookings')
+    start_time   = models.DateTimeField()
+    end_time     = models.DateTimeField()
     project_name = models.CharField(max_length=200, blank=True)
-    description = models.TextField(blank=True)
-    is_active   = models.BooleanField(default=True)
-    created_at  = models.DateTimeField(auto_now_add=True)
-    released_at = models.DateTimeField(null=True, blank=True)
-    created_by  = models.ForeignKey(
-        'User', on_delete=models.CASCADE,
-        related_name='created_bookings', null=True, blank=True,
-    )
+    description  = models.TextField(blank=True)
+    is_active    = models.BooleanField(default=True)
+    created_at   = models.DateTimeField(auto_now_add=True)
+    released_at  = models.DateTimeField(null=True, blank=True)
+    created_by   = models.ForeignKey(
+        'User', on_delete=models.CASCADE, related_name='created_bookings', null=True, blank=True)
 
     class Meta:
         ordering = ['-created_at']
         constraints = [
             models.CheckConstraint(
                 condition=models.Q(end_time__gte=models.F('start_time')),
-                name='booking_end_after_start',
-            ),
+                name='booking_end_after_start'),
         ]
         indexes = [
             models.Index(fields=['resource', 'is_active', 'start_time', 'end_time']),
@@ -139,11 +187,8 @@ class Booking(models.Model):
 
     def end_booking(self) -> None:
         now = timezone.now()
-        if now <= self.start_time:
-            self.end_time = self.start_time
-        else:
-            self.end_time = min(now, self.end_time)
-        self.is_active   = False
+        self.end_time   = self.start_time if now <= self.start_time else min(now, self.end_time)
+        self.is_active  = False
         self.released_at = timezone.now()
         self.save(update_fields=['end_time', 'is_active', 'released_at'])
 
@@ -154,8 +199,6 @@ class Booking(models.Model):
 
 
 class UserInvitation(models.Model):
-    """Admin-generated invitation for a new user to register."""
-
     email      = models.EmailField()
     role       = models.CharField(max_length=10, choices=User.Role.choices, default=User.Role.RA)
     token      = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
@@ -173,18 +216,14 @@ class UserInvitation(models.Model):
         super().save(*args, **kwargs)
 
     @property
-    def is_expired(self) -> bool:
-        return timezone.now() > self.expires_at
-
+    def is_expired(self) -> bool: return timezone.now() > self.expires_at
     @property
-    def is_valid(self) -> bool:
-        return not self.used and not self.is_expired
+    def is_valid(self) -> bool: return not self.used and not self.is_expired
 
     def __str__(self) -> str:
         return f"Invite to {self.email} ({self.role})"
 
 
-# Keep RegistrationRequest for backwards compatibility with existing migrations
 class RegistrationRequest(models.Model):
     class Status(models.TextChoices):
         PENDING  = 'PENDING',  'Pending'
@@ -218,7 +257,7 @@ class WeeklyUpdate(models.Model):
         ordering = ['-created_at']
 
     def __str__(self) -> str:
-        return f"Update by {self.user.username} on {self.project_name} at {self.created_at.date()}"
+        return f"Update by {self.user.username} on {self.project_name}"
 
 
 class Announcement(models.Model):
@@ -226,6 +265,7 @@ class Announcement(models.Model):
     title      = models.CharField(max_length=200)
     content    = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ['-created_at']

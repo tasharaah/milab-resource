@@ -1,72 +1,104 @@
 {% extends 'labapp/base.html' %}
-{% block title %}Print Usage Stats | MI Lab{% endblock %}
+{% block title %}Usage Reports | MI Lab{% endblock %}
 
 {% block content %}
 
 <div class="page-header">
   <div>
-    <h1 class="page-title">Print Usage Statistics</h1>
-    <p class="page-subtitle">Generate a printable PDF report of booking durations</p>
+    <h1 class="page-title">Usage Reports</h1>
+    <p class="page-subtitle">Configure filters, preview, then download a full PDF report</p>
   </div>
 </div>
 
 <div class="row justify-content-center">
-  <div class="col-lg-7">
+  <div class="col-lg-8">
     <div class="card">
       <div class="card-header">
-        <i class="fa-solid fa-file-pdf me-2" style="color:var(--danger);"></i>Configure Report
+        <i class="fa-solid fa-sliders me-2" style="color:var(--primary);"></i>Report Configuration
       </div>
       <div class="card-body" style="padding:2rem;">
 
-        <p style="font-size:.875rem; color:var(--text-muted); margin-bottom:1.75rem; line-height:1.6;">
-          Select a user and date range to generate a printable PDF summarising booking durations.
-          If no user is selected, the report will include all research assistants, students and interns.
+        <p style="font-size:.875rem;color:var(--text-muted);margin-bottom:1.75rem;line-height:1.6;">
+          Select filters to narrow the report scope. Leave as "All" to include everything.
+          Use <strong>Preview</strong> to review the data in browser before downloading the PDF.
         </p>
 
-        <form method="post">
-          {% csrf_token %}
+        <form id="reportForm" method="get" action="{% url 'print_usage_stats' %}">
+          <!-- Hidden field to trigger preview -->
+          <input type="hidden" name="preview" value="1" id="previewField">
 
-          <div class="mb-4">
-            <label class="form-label">
-              <i class="fa-solid fa-user me-1"></i>User
-            </label>
-            <select name="ra" class="form-select">
-              <option value="all" {% if selected_ra == 'all' %}selected{% endif %}>All Users</option>
-              {% for u in ra_list %}
-                <option value="{{ u.id }}" {% if u.id|stringformat:'s' == selected_ra|stringformat:'s' %}selected{% endif %}>
-                  {{ u.get_full_name|default:u.username }}</option>
-              {% endfor %}
-            </select>
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <label class="form-label"><i class="fa-solid fa-user me-1"></i>User</label>
+              <select name="ra" class="form-select">
+                <option value="all" {% if selected_ra == 'all' %}selected{% endif %}>All Users</option>
+                {% for u in ra_list %}
+                  <option value="{{ u.id }}" {% if u.id|stringformat:'s' == selected_ra %}selected{% endif %}>
+                    {{ u.get_full_name|default:u.username }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label"><i class="fa-solid fa-server me-1"></i>Resource</label>
+              <select name="resource" class="form-select">
+                <option value="all" {% if selected_resource == 'all' %}selected{% endif %}>All Resources</option>
+                {% for r in resource_list %}
+                  <option value="{{ r.id }}" {% if r.id|stringformat:'s' == selected_resource %}selected{% endif %}>
+                    {{ r.name }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label"><i class="fa-solid fa-diagram-project me-1"></i>Project</label>
+              <select name="project" class="form-select">
+                <option value="all" {% if selected_project == 'all' %}selected{% endif %}>All Projects</option>
+                {% for p in project_list %}
+                  <option value="{{ p.name }}" {% if p.name == selected_project %}selected{% endif %}>{{ p.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label"><i class="fa-solid fa-calendar me-1"></i>Quick Range</label>
+              <select id="periodSelect" name="period" class="form-select">
+                <option value="" {% if selected_period == '' %}selected{% endif %}>Custom</option>
+                <option value="last_week"     {% if selected_period == 'last_week' %}selected{% endif %}>Last Week</option>
+                <option value="last_month"    {% if selected_period == 'last_month' %}selected{% endif %}>Last Month</option>
+                <option value="last_3_months" {% if selected_period == 'last_3_months' %}selected{% endif %}>Last 3 Months</option>
+                <option value="last_year"     {% if selected_period == 'last_year' %}selected{% endif %}>Last Year</option>
+                <option value="all"           {% if selected_period == 'all' %}selected{% endif %}>All Time</option>
+              </select>
+            </div>
           </div>
 
-          <div class="mb-4">
-            <label class="form-label">
-              <i class="fa-solid fa-calendar me-1"></i>Quick Range
-            </label>
-            <select id="printPeriodSelect" name="period" class="form-select">
-              <option value=""           {% if selected_period == '' %}selected{% endif %}>Custom Date Range</option>
-              <option value="last_week"  {% if selected_period == 'last_week' %}selected{% endif %}>Last Week</option>
-              <option value="last_month" {% if selected_period == 'last_month' %}selected{% endif %}>Last Month</option>
-              <option value="last_3_months" {% if selected_period == 'last_3_months' %}selected{% endif %}>Last 3 Months</option>
-              <option value="last_year"  {% if selected_period == 'last_year' %}selected{% endif %}>Last Year</option>
-              <option value="all"        {% if selected_period == 'all' %}selected{% endif %}>All Time</option>
-            </select>
-          </div>
-
-          <div id="custom-date-fields" class="row g-3 mb-4">
-            <div class="col-md-6" id="print-range-start">
+          <div id="customDateFields" class="row g-3 mb-4">
+            <div class="col-md-6">
               <label class="form-label">Start Date</label>
               <input type="date" name="start" value="{{ start_date }}" class="form-control">
             </div>
-            <div class="col-md-6" id="print-range-end">
+            <div class="col-md-6">
               <label class="form-label">End Date</label>
               <input type="date" name="end" value="{{ end_date }}" class="form-control">
             </div>
           </div>
 
-          <button type="submit" class="btn btn-primary btn-lg w-100">
-            <i class="fa-solid fa-file-arrow-down me-2"></i>Generate PDF Report
-          </button>
+          <div style="display:flex;gap:.75rem;justify-content:flex-end;flex-wrap:wrap;">
+            <button type="submit" class="btn btn-outline-primary btn-lg" id="previewBtn">
+              <i class="fa-solid fa-eye me-2"></i>Preview Report
+            </button>
+          </div>
+        </form>
+
+        <!-- Separate POST form for PDF download (populated via JS) -->
+        <form id="pdfForm" method="post" action="{% url 'print_usage_stats' %}" style="display:none;">
+          {% csrf_token %}
+          <input type="hidden" name="ra"       id="pdf_ra">
+          <input type="hidden" name="resource" id="pdf_resource">
+          <input type="hidden" name="project"  id="pdf_project">
+          <input type="hidden" name="period"   id="pdf_period">
+          <input type="hidden" name="start"    id="pdf_start">
+          <input type="hidden" name="end"      id="pdf_end">
         </form>
 
       </div>
@@ -79,13 +111,13 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  function togglePrintDateFields() {
-    const val = document.getElementById('printPeriodSelect').value;
-    const fields = document.getElementById('custom-date-fields');
-    if (fields) fields.style.display = val === '' ? '' : 'none';
+  // Toggle custom date fields
+  function toggleDates() {
+    const v = document.getElementById('periodSelect').value;
+    document.getElementById('customDateFields').style.display = v === '' ? '' : 'none';
   }
-  const el = document.getElementById('printPeriodSelect');
-  if (el) { el.addEventListener('change', togglePrintDateFields); togglePrintDateFields(); }
+  document.getElementById('periodSelect').addEventListener('change', toggleDates);
+  toggleDates();
 });
 </script>
 {% endblock %}

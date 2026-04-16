@@ -1,0 +1,286 @@
+{% extends 'labapp/base.html' %}
+{% block title %}Report Preview | MI Lab{% endblock %}
+
+{% block extra_head %}
+<style>
+  .preview-stat{background:var(--primary-light);border-radius:var(--radius-lg);padding:1.25rem;text-align:center;}
+  .preview-stat-val{font-family:'Outfit',sans-serif;font-size:2rem;font-weight:800;color:var(--primary);line-height:1;}
+  .preview-stat-label{font-size:.75rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--primary-dark);margin-top:.25rem;}
+  .preview-table thead th{background:var(--primary);color:#fff;font-family:'Outfit',sans-serif;font-size:.75rem;letter-spacing:.05em;text-transform:uppercase;padding:.6rem .9rem;}
+  .preview-table tbody td{font-size:.85rem;padding:.6rem .9rem;border-color:var(--border);}
+  .preview-table tbody tr:nth-child(even){background:var(--surface-2);}
+  .chart-wrapper{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem;box-shadow:var(--shadow-sm);}
+  .chart-title{font-family:'Outfit',sans-serif;font-size:.95rem;font-weight:700;color:var(--text-primary);margin-bottom:.85rem;}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Report Preview</h1>
+    <p class="page-subtitle">
+      {% if data.sd and data.ed %}
+        {{ data.sd|date:"d M Y" }} — {{ data.ed|date:"d M Y" }}
+      {% else %}All time{% endif %}
+    </p>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    <a href="{% url 'print_usage_stats' %}" class="btn btn-secondary">
+      <i class="fa-solid fa-arrow-left me-2"></i>Back to Config
+    </a>
+    <!-- Download PDF via POST -->
+    <form method="post" action="{% url 'print_usage_stats' %}" class="d-inline">
+      {% csrf_token %}
+      <input type="hidden" name="ra"       value="{{ params.ra|default:'all' }}">
+      <input type="hidden" name="resource" value="{{ params.resource|default:'all' }}">
+      <input type="hidden" name="project"  value="{{ params.project|default:'all' }}">
+      <input type="hidden" name="period"   value="{{ params.period|default:'' }}">
+      <input type="hidden" name="start"    value="{{ params.start|default:'' }}">
+      <input type="hidden" name="end"      value="{{ params.end|default:'' }}">
+      <button type="submit" class="btn btn-primary">
+        <i class="fa-solid fa-file-arrow-down me-2"></i>Download PDF
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- Summary Stats -->
+{% with total_hrs=data.by_res|length %}
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="preview-stat">
+      <div class="preview-stat-val">{{ data.bookings|length }}</div>
+      <div class="preview-stat-label">Total Bookings</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="preview-stat">
+      <div class="preview-stat-val">
+        {% with total=0 %}
+          {% for r, h in data.by_res %}{% endfor %}
+          {{ data.by_res|length }}
+        {% endwith %}
+        <!-- JS will fill this -->
+        <span id="totalHrs">—</span>h
+      </div>
+      <div class="preview-stat-label">Total Hours</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="preview-stat">
+      <div class="preview-stat-val">{{ data.by_res|length }}</div>
+      <div class="preview-stat-label">Resources Used</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="preview-stat">
+      <div class="preview-stat-val">{{ data.by_user|length }}</div>
+      <div class="preview-stat-label">Users Active</div>
+    </div>
+  </div>
+</div>
+{% endwith %}
+
+<!-- Charts Row -->
+<div class="row g-3 mb-4">
+  <div class="col-lg-6">
+    <div class="chart-wrapper">
+      <div class="chart-title">Resource Usage (Hours)</div>
+      <div style="position:relative;height:260px;"><canvas id="resChart"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="chart-wrapper">
+      <div class="chart-title">Top Users by Hours</div>
+      <div style="position:relative;height:260px;"><canvas id="userChart"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-12">
+    <div class="chart-wrapper">
+      <div class="chart-title">Booking Activity by Hour of Day</div>
+      <div style="position:relative;height:200px;"><canvas id="hourChart"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- Resource Hours Table -->
+{% if data.by_res %}
+<div class="section-title mb-3"><i class="fa-solid fa-server me-1"></i> Hours by Resource</div>
+<div class="data-table-wrap mb-4">
+  <div class="table-responsive">
+    <table class="table preview-table">
+      <thead><tr><th>Resource</th><th>Total Hours</th><th>Share</th></tr></thead>
+      <tbody>
+        {% for rname, hrs in data.by_res %}
+        <tr>
+          <td style="font-weight:500;color:var(--text-primary);">{{ rname }}</td>
+          <td>{{ hrs|floatformat:2 }}</td>
+          <td><span id="res-share-{{ forloop.counter }}" style="color:var(--text-muted);font-size:.82rem;">—</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- User Hours Table -->
+{% if data.by_user %}
+<div class="section-title mb-3"><i class="fa-solid fa-users me-1"></i> Hours by User</div>
+<div class="data-table-wrap mb-4">
+  <div class="table-responsive">
+    <table class="table preview-table">
+      <thead><tr><th>Username</th><th>Total Hours</th><th>Share</th></tr></thead>
+      <tbody>
+        {% for uname, hrs in data.by_user %}
+        <tr>
+          <td style="font-weight:500;color:var(--text-primary);">{{ uname }}</td>
+          <td>{{ hrs|floatformat:2 }}</td>
+          <td><span id="usr-share-{{ forloop.counter }}" style="color:var(--text-muted);font-size:.82rem;">—</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- Detailed Booking Log -->
+{% if data.bookings %}
+<div class="section-title mb-3"><i class="fa-solid fa-list me-1"></i> Detailed Booking Log</div>
+<div class="data-table-wrap mb-4">
+  <div class="table-responsive">
+    <table class="table preview-table">
+      <thead>
+        <tr><th>#</th><th>User</th><th>Resource</th><th>Project</th><th>Start</th><th>End</th><th>Duration</th></tr>
+      </thead>
+      <tbody>
+        {% for b in data.bookings %}
+        <tr>
+          <td style="color:var(--text-muted);">{{ forloop.counter }}</td>
+          <td style="font-weight:500;color:var(--text-primary);">{{ b.user.get_full_name|default:b.user.username }}</td>
+          <td>{{ b.resource.name }}</td>
+          <td style="color:var(--text-muted);">{{ b.project_name|default:'—' }}</td>
+          <td style="font-size:.82rem;color:var(--text-muted);">{{ b.start_time|date:'d M, Y h:i A' }}</td>
+          <td style="font-size:.82rem;color:var(--text-muted);">{{ b.end_time|date:'d M, Y h:i A'|default:'—' }}</td>
+          <td>
+            {% if b.start_time and b.end_time %}
+              {% widthratio b.end_time|date:'U'|add:b.start_time|date:'U' 3600 1 %}h
+            {% else %}—{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="card mb-4">
+  <div class="empty-state">
+    <i class="fa-solid fa-calendar-xmark"></i>
+    <p>No bookings found for the selected filters.</p>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const CC = { grid:'#E2E8F0', text:'#94A3B8', blue:'#4F46E5', teal:'#06B6D4', green:'#10B981', pink:'#F43F5E' };
+const pal = ['#4F46E5','#06B6D4','#10B981','#F59E0B','#F43F5E','#8B5CF6','#EC4899','#14B8A6'];
+Chart.defaults.font.family = "'DM Sans',system-ui,sans-serif";
+Chart.defaults.font.size   = 12;
+Chart.defaults.color       = CC.text;
+
+document.addEventListener('DOMContentLoaded', function() {
+  const byRes  = {{ by_res_json|safe }};
+  const byUser = {{ by_user_json|safe }};
+  const hours  = {{ hour_json|safe }};
+
+  // Compute total hours
+  const totalHrs = byRes.reduce((s, x) => s + x.v, 0);
+  document.getElementById('totalHrs').textContent = totalHrs.toFixed(1);
+
+  // Resource share percentages
+  byRes.forEach((x, i) => {
+    const el = document.getElementById('res-share-' + (i+1));
+    if (el) el.textContent = totalHrs > 0 ? (x.v / totalHrs * 100).toFixed(1) + '%' : '—';
+  });
+
+  // User share percentages
+  const totalUserHrs = byUser.reduce((s, x) => s + x.v, 0);
+  byUser.forEach((x, i) => {
+    const el = document.getElementById('usr-share-' + (i+1));
+    if (el) el.textContent = totalUserHrs > 0 ? (x.v / totalUserHrs * 100).toFixed(1) + '%' : '—';
+  });
+
+  // Resource bar chart
+  if (byRes.length) {
+    new Chart(document.getElementById('resChart'), {
+      type: 'bar',
+      data: {
+        labels: byRes.map(x => x.k),
+        datasets: [{ label: 'Hours', data: byRes.map(x => x.v),
+          backgroundColor: byRes.map((_, i) => pal[i % pal.length] + 'cc'),
+          borderRadius: 6, borderSkipped: false }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { beginAtZero: true, grid: { color: CC.grid }, title: { display: true, text: 'Hours' } },
+          y: { grid: { display: false } }
+        }
+      }
+    });
+  }
+
+  // User bar chart
+  if (byUser.length) {
+    const top8 = byUser.slice(0, 8);
+    new Chart(document.getElementById('userChart'), {
+      type: 'bar',
+      data: {
+        labels: top8.map(x => x.k),
+        datasets: [{ label: 'Hours', data: top8.map(x => x.v),
+          backgroundColor: top8.map((_, i) => pal[i % pal.length] + 'cc'),
+          borderRadius: 6, borderSkipped: false }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { display: false } },
+          y: { beginAtZero: true, grid: { color: CC.grid }, title: { display: true, text: 'Hours' } }
+        }
+      }
+    });
+  }
+
+  // Hour distribution line chart
+  new Chart(document.getElementById('hourChart'), {
+    type: 'line',
+    data: {
+      labels: Array.from({length:24}, (_, i) => i + ':00'),
+      datasets: [{ label: 'Bookings', data: hours, fill: true,
+        borderColor: CC.green, backgroundColor: CC.green + '22',
+        tension: 0.4, pointRadius: 3, pointBackgroundColor: CC.green }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: CC.grid } },
+        y: { beginAtZero: true, grid: { color: CC.grid }, title: { display: true, text: 'Count' } }
+      }
+    }
+  });
+});
+</script>
+{% endblock %}

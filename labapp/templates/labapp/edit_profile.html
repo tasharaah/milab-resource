@@ -1,0 +1,72 @@
+{% extends 'labapp/base.html' %}
+{% block title %}Edit Profile | MI Lab{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Edit Profile</h1>
+    <p class="page-subtitle">Update your personal information</p>
+  </div>
+  <a href="{% url 'user_profile_self' %}" class="btn btn-secondary">
+    <i class="fa-solid fa-arrow-left me-2"></i>Back to Profile
+  </a>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-lg-6 col-md-8">
+    <div class="card">
+      <div class="card-header">
+        <i class="fa-solid fa-pen me-2" style="color:var(--primary);"></i>Personal Details
+      </div>
+      <div class="card-body" style="padding:2rem;">
+        {% if form.errors %}
+        <div class="alert alert-danger mb-3">
+          {% for field, errs in form.errors.items %}{% for e in errs %}<div>{{ e }}</div>{% endfor %}{% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="post">
+          {% csrf_token %}
+
+          <div class="row g-3 mb-3">
+            <div class="col-6">
+              <label class="form-label">First Name</label>
+              {{ form.first_name }}
+            </div>
+            <div class="col-6">
+              <label class="form-label">Last Name</label>
+              {{ form.last_name }}
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label"><i class="fa-solid fa-envelope me-1"></i>Email</label>
+            {{ form.email }}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label"><i class="fa-solid fa-phone me-1"></i>Phone</label>
+            {{ form.phone }}
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label"><i class="fa-solid fa-align-left me-1"></i>Bio
+              <span style="font-weight:400;color:var(--text-muted);">(optional)</span>
+            </label>
+            {{ form.bio }}
+            <p class="form-text">A short description about yourself, your research interests, etc.</p>
+          </div>
+
+          <div style="display:flex;gap:.75rem;justify-content:flex-end;">
+            <a href="{% url 'user_profile_self' %}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary">
+              <i class="fa-solid fa-floppy-disk me-2"></i>Save Changes
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

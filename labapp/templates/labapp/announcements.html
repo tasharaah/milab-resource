@@ -1,6 +1,5 @@
 {% extends 'labapp/base.html' %}
 {% block title %}Announcements | MI Lab{% endblock %}
-
 {% block content %}
 
 <div class="page-header">
@@ -16,20 +15,41 @@
 </div>
 
 {% if announcements %}
-  <div style="display:flex; flex-direction:column; gap:1rem;">
+  <div style="display:flex;flex-direction:column;gap:1rem;">
   {% for ann in announcements %}
   <div class="content-card">
     <div class="content-card-header">
-      <h2 class="content-card-title">{{ ann.title }}</h2>
-      <div class="content-card-meta mt-1">
-        <span><i class="fa-solid fa-user"></i>{{ ann.author.get_full_name|default:ann.author.username }}</span>
-        <span><i class="fa-solid fa-calendar"></i>{{ ann.created_at|date:'d M Y, h:i A' }}</span>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
+        <div>
+          <h2 class="content-card-title">{{ ann.title }}</h2>
+          <div class="content-card-meta mt-1">
+            <span><i class="fa-solid fa-user"></i>{{ ann.author.get_full_name|default:ann.author.username }}</span>
+            <span><i class="fa-solid fa-calendar"></i>{{ ann.created_at|date:'d M Y, h:i A' }}</span>
+            {% if ann.updated_at != ann.created_at %}
+              <span style="color:var(--text-muted);font-style:italic;">
+                <i class="fa-solid fa-pen-to-square"></i>Edited {{ ann.updated_at|date:'d M Y' }}
+              </span>
+            {% endif %}
+          </div>
+        </div>
+        {% if user.is_staff or user.is_superuser or user.role == 'Faculty' or ann.author == user %}
+        <div class="d-flex gap-2 align-items-center">
+          <a href="{% url 'edit_announcement' ann.id %}" class="btn btn-sm btn-secondary" title="Edit">
+            <i class="fa-solid fa-pen"></i>
+          </a>
+          <form method="post" action="{% url 'delete_announcement' ann.id %}"
+                onsubmit="return confirm('Delete this announcement?');" class="d-inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-danger" title="Delete">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </form>
+        </div>
+        {% endif %}
       </div>
     </div>
     <div class="content-card-body">
-      <div style="line-height:1.75; color:var(--text-secondary);">
-        {{ ann.content|safe }}
-      </div>
+      <div style="line-height:1.75;color:var(--text-secondary);">{{ ann.content|safe }}</div>
     </div>
   </div>
   {% endfor %}

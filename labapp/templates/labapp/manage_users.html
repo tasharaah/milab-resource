@@ -31,16 +31,18 @@
     <table class="table">
       <thead>
         <tr>
-          <th>Username</th><th>Full Name</th><th>Role</th><th>Email</th><th>Phone</th><th>Contact</th><th>Action</th>
+          <th>Username</th><th>Full Name</th><th>Role</th><th>Email</th><th>Phone</th><th>Contact</th><th style="width:80px;">Action</th>
         </tr>
       </thead>
       <tbody>
         {% for u in users %}
         <tr>
-          <td style="font-weight:600;color:var(--text-primary);">{{ u.username }}</td>
+          <td>
+            <a href="{% url 'user_profile' u.id %}" style="font-weight:600;color:var(--primary);">{{ u.username }}</a>
+          </td>
           <td>{{ u.get_full_name|default:u.username }}</td>
           <td>
-            <span class="badge {% if u.role == 'Faculty' %}bg-primary{% elif u.role == 'RA' %}bg-danger{% elif u.role == 'Student' %}bg-success{% elif u.role == 'Intern' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+            <span class="badge {% if u.role == 'Faculty' %}bg-primary{% elif u.role == 'RA' %}bg-info{% elif u.role == 'Student' %}bg-success{% else %}bg-secondary{% endif %}">
               {{ u.role }}
             </span>
           </td>
@@ -53,9 +55,12 @@
             </div>
           </td>
           <td>
-            <form method="post" action="{% url 'delete_user' u.id %}" onsubmit="return confirm('Delete user {{ u.username }}?');">
+            <form method="post" action="{% url 'delete_user' u.id %}"
+                  onsubmit="return confirm('Delete user {{ u.username }}?');">
               {% csrf_token %}
-              <button type="submit" class="btn btn-sm btn-danger"><i class="fa-solid fa-trash me-1"></i>Delete</button>
+              <button type="submit" class="btn btn-sm btn-danger" title="Delete {{ u.username }}">
+                <i class="fa-solid fa-trash"></i>
+              </button>
             </form>
           </td>
         </tr>

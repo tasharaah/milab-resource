@@ -14,14 +14,14 @@
     {% elif project.status == 'COMPLETED' %}<span class="badge bg-secondary" style="font-size:.85rem;padding:.4em .8em;">Completed</span>
     {% elif project.status == 'PROPOSED' %}<span class="badge bg-info" style="font-size:.85rem;padding:.4em .8em;">Proposed</span>
     {% else %}<span class="badge bg-warning" style="font-size:.85rem;padding:.4em .8em;">Upcoming</span>{% endif %}
-    {% if user.is_staff or user.is_superuser or user.role == 'Faculty' %}
-    <a href="{% url 'edit_project' project.id %}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-pen me-1"></i>Edit</a>
+    {% if can_edit %}
+    <a href="{% url 'edit_project' project.id %}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-pen me-1"></i>Edit Project</a>
     {% endif %}
   </div>
 </div>
 
 <div class="row g-3">
-  <!-- Left column: key details -->
+  <!-- Main details -->
   <div class="col-lg-8">
     <div class="card mb-3">
       <div class="card-header"><i class="fa-solid fa-circle-info me-2" style="color:var(--primary);"></i>Project Details</div>
@@ -30,14 +30,12 @@
           <div class="col-sm-6">
             <p style="font-size:.72rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);margin:0 0 .25rem;">Principal Investigator</p>
             <p style="font-weight:600;color:var(--text-primary);margin:0;">
-              {% if project.principal_investigator %}
-                {{ project.principal_investigator.get_full_name|default:project.principal_investigator.username }}
-              {% else %}—{% endif %}
+              {% if project.principal_investigator %}{{ project.principal_investigator.get_full_name|default:project.principal_investigator.username }}{% else %}—{% endif %}
             </p>
           </div>
           <div class="col-sm-6">
             <p style="font-size:.72rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);margin:0 0 .25rem;">Grant</p>
-            <p style="font-weight:500;color:var(--text-secondary);margin:0;">{{ project.grant|default:'—' }}</p>
+            <p style="color:var(--text-secondary);margin:0;">{{ project.grant|default:'—' }}</p>
           </div>
           <div class="col-sm-6">
             <p style="font-size:.72rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);margin:0 0 .25rem;">Start Date</p>
@@ -69,9 +67,9 @@
         {% if copis %}
           <div class="d-flex flex-wrap gap-2">
             {% for copi in copis %}
-            <span style="background:var(--info-light);color:#1E40AF;border-radius:999px;padding:.3rem .8rem;font-size:.82rem;font-weight:500;">
+            <a href="{% url 'user_profile' copi.id %}" style="background:var(--info-light);color:#1E40AF;border-radius:999px;padding:.3rem .8rem;font-size:.82rem;font-weight:500;text-decoration:none;">
               {{ copi.get_full_name|default:copi.username }}
-            </span>
+            </a>
             {% endfor %}
           </div>
         {% else %}
@@ -80,9 +78,51 @@
         {% endwith %}
       </div>
     </div>
+
+    <!-- Collaboration Links (members only) -->
+    {% if is_member %}
+    <div class="card mb-3">
+      <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;">
+        <span><i class="fa-solid fa-link me-2" style="color:var(--primary);"></i>Collaboration Links</span>
+        {% if can_edit_links %}
+        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addLinkModal">
+          <i class="fa-solid fa-plus me-1"></i>Add Link
+        </button>
+        {% endif %}
+      </div>
+      <div class="card-body">
+        {% if links %}
+          <div class="d-flex flex-wrap gap-2">
+            {% for link in links %}
+            <div style="display:flex;align-items:center;gap:.5rem;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);padding:.5rem .9rem;">
+              <i class="{{ link.icon_class }}" style="color:var(--primary);font-size:.9rem;"></i>
+              <a href="{{ link.url }}" target="_blank" rel="noopener noreferrer"
+                 style="font-size:.85rem;font-weight:500;color:var(--text-primary);">
+                {{ link.display_label }}
+              </a>
+              {% if can_edit_links %}
+              <form method="post" action="{% url 'delete_project_link' link.id %}" class="d-inline ms-1">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm" style="padding:.15rem .35rem;border:none;background:transparent;color:var(--text-muted);"
+                        onclick="return confirm('Remove this link?');"
+                        title="Remove link"><i class="fa-solid fa-xmark" style="font-size:.75rem;"></i></button>
+              </form>
+              {% endif %}
+            </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p style="color:var(--text-muted);font-size:.875rem;margin:0;">
+            {% if can_edit_links %}No links yet. Add Overleaf, Google Doc, Drive or other collaboration links.
+            {% else %}No collaboration links have been added yet.{% endif %}
+          </p>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
   </div>
 
-  <!-- Right column: RAs -->
+  <!-- Right: RAs -->
   <div class="col-lg-4">
     <div class="card">
       <div class="card-header"><i class="fa-solid fa-users me-2" style="color:var(--success);"></i>Research Assistants</div>
@@ -91,17 +131,17 @@
         {% if ras %}
           <div style="display:flex;flex-direction:column;gap:.5rem;">
             {% for ra in ras %}
-            <div style="display:flex;align-items:center;gap:.65rem;padding:.5rem .75rem;background:var(--surface-2);border-radius:var(--radius-sm);border:1px solid var(--border);">
+            <a href="{% url 'user_profile' ra.id %}" style="display:flex;align-items:center;gap:.65rem;padding:.5rem .75rem;background:var(--surface-2);border-radius:var(--radius-sm);border:1px solid var(--border);text-decoration:none;">
               <div style="width:30px;height:30px;background:var(--primary-light);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
                 <i class="fa-solid fa-user" style="font-size:.65rem;color:var(--primary);"></i>
               </div>
               <div style="min-width:0;">
-                <p style="font-size:.83rem;font-weight:600;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                <p style="font-size:.83rem;font-weight:600;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-primary);">
                   {{ ra.get_full_name|default:ra.username }}
                 </p>
                 <p style="font-size:.72rem;color:var(--text-muted);margin:0;">{{ ra.role }}</p>
               </div>
-            </div>
+            </a>
             {% endfor %}
           </div>
         {% else %}
@@ -112,5 +152,40 @@
     </div>
   </div>
 </div>
+
+<!-- Add Link Modal -->
+{% if can_edit_links and link_form %}
+<div class="modal fade" id="addLinkModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:420px;">
+    <div class="modal-content">
+      <form method="post" action="{% url 'add_project_link' project.id %}">
+        {% csrf_token %}
+        <div class="modal-header" style="padding:1.25rem 1.5rem;">
+          <h5 class="modal-title" style="font-family:'Outfit',sans-serif;font-weight:700;margin:0;">Add Collaboration Link</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body" style="padding:1.5rem;">
+          <div class="mb-3">
+            <label class="form-label">Platform</label>
+            {{ link_form.platform }}
+          </div>
+          <div class="mb-3">
+            <label class="form-label">URL</label>
+            {{ link_form.url }}
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Label <span style="font-weight:400;color:var(--text-muted);">(optional)</span></label>
+            {{ link_form.label }}
+          </div>
+        </div>
+        <div class="modal-footer" style="padding:1rem 1.5rem;gap:.5rem;">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-link me-1"></i>Add Link</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
 
 {% endblock %}
