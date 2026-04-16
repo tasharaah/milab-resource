@@ -12,6 +12,7 @@ matplotlib.use('Agg')  # non-interactive backend
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from matplotlib.ticker import MaxNLocator
+from matplotlib import colors as mcolors
 
 from django.conf import settings
 from django.contrib import messages
@@ -53,16 +54,6 @@ def is_faculty_user(user) -> bool:
         user.is_staff or user.is_superuser or
         getattr(user, 'is_faculty', lambda: False)()
     )
-
-
-# ── Auto-logout (browser close detection) ─────────────────────────────────
-
-@csrf_exempt
-def auto_logout(request):
-    """Called via JS beacon when the browser tab/window closes."""
-    if request.user.is_authenticated:
-        auth_logout(request)
-    return HttpResponse(status=204)
 
 
 # ── Dashboards ─────────────────────────────────────────────────────────────
@@ -450,7 +441,7 @@ def edit_project(request, project_id: int):
 def add_project_link(request, project_id: int):
     project = get_object_or_404(Project, pk=project_id)
     if not project.can_edit_links(request.user):
-        messages.error(request, 'Only PI or Co-PI can add links.')
+        messages.error(request, 'Only project members with link permission can add links.')
         return redirect('project_detail', project_id=project_id)
     if request.method == 'POST':
         form = ProjectLinkForm(request.POST)
@@ -845,8 +836,8 @@ def print_usage_stats(request):
         GRAY   = colors.HexColor('#94A3B8')
         LIGHT  = colors.HexColor('#F8FAFC')
 
-        palette = [INDIGO, TEAL, GREEN, AMBER, ROSE, colors.HexColor('#8B5CF6'),
-                   colors.HexColor('#EC4899'), colors.HexColor('#14B8A6')]
+        palette = ['#4F46E5', '#06B6D4', '#10B981', '#F59E0B', '#F43F5E',
+           '#8B5CF6', '#EC4899', '#14B8A6']
 
         story = []
 
@@ -907,7 +898,7 @@ def print_usage_stats(request):
                 ax.tick_params(axis='x', labelsize=8)
                 ax.spines['top'].set_visible(False)
                 ax.spines['right'].set_visible(False)
-                ax.set_facecolor('#F8FAFC')
+                ax.set_facecolor(mcolors.to_rgba('#F8FAFC'))
                 for bar, val in zip(bars, res_vals):
                     ax.text(val + 0.05, bar.get_y() + bar.get_height()/2,
                             f'{val:.1f}h', va='center', fontsize=8, color='#475569')
@@ -931,7 +922,7 @@ def print_usage_stats(request):
                 ax.tick_params(axis='y', labelsize=8)
                 ax.spines['top'].set_visible(False)
                 ax.spines['right'].set_visible(False)
-                ax.set_facecolor('#F8FAFC')
+                ax.set_facecolor(mcolors.to_rgba('#F8FAFC'))
                 ax.yaxis.set_major_locator(MaxNLocator(integer=True))
             buf2 = _make_chart_png(draw_user_bar, width=520, height=220)
             story.append(RLImage(buf2, width=15*cm, height=6.5*cm))
@@ -949,7 +940,7 @@ def print_usage_stats(request):
             ax.tick_params(axis='y', labelsize=8)
             ax.spines['top'].set_visible(False)
             ax.spines['right'].set_visible(False)
-            ax.set_facecolor('#F8FAFC')
+            ax.set_facecolor(mcolors.to_rgba('#F8FAFC'))
         buf3 = _make_chart_png(draw_hour, width=520, height=200)
         story.append(RLImage(buf3, width=15*cm, height=5.5*cm))
         story.append(Spacer(1, 0.3*cm))

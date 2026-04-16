@@ -221,48 +221,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
 <script>
-// ── Auto-logout when browser is fully closed ────────────────────────────────
-// sessionStorage is cleared when ALL tabs of this origin are closed.
-// This detects browser close / session restore and forces a fresh login.
-{% if user.is_authenticated %}
-(function () {
-  const KEY = 'mi_lab_session_alive';
-  if (!sessionStorage.getItem(KEY)) {
-    // No marker: this is either a fresh login or the browser was closed/restored.
-    // We'll let the first authenticated page load pass (sets the marker).
-    // If Django's session is still valid after browser restore, the user will
-    // see the page normally but on the *next* browser-close-and-reopen,
-    // they'll be logged out. The session cookie is also a session cookie
-    // (SESSION_EXPIRE_AT_BROWSER_CLOSE = True) so most browsers clear it anyway.
-  }
-  sessionStorage.setItem(KEY, '1');
 
-  // For extra security: use pagehide beacon when closing
-  let navigatingInternally = false;
-  document.addEventListener('click', function(e) {
-    const a = e.target.closest('a[href]');
-    if (a && !a.target && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
-      try {
-        const url = new URL(a.href);
-        if (url.origin === location.origin) navigatingInternally = true;
-      } catch(err){}
-    }
-  }, true);
-  document.addEventListener('submit', function() { navigatingInternally = true; }, true);
-
-  window.addEventListener('pagehide', function(event) {
-    if (!event.persisted && !navigatingInternally) {
-      // Tab/window is being closed, not navigated away
-      try {
-        const fd = new FormData();
-        fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-        navigator.sendBeacon('{% url "auto_logout" %}', fd);
-      } catch(e) {}
-    }
-    navigatingInternally = false;
-  });
-})();
-{% endif %}
 
 // ── Active nav link ─────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function() {

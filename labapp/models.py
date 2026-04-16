@@ -103,12 +103,14 @@ class Project(models.Model):
         return False
 
     def can_edit_links(self, user) -> bool:
-        """Only PI, co-PI, or admin can edit collaboration links."""
+        """PI, co-PI, assigned RA, or admin can edit collaboration links."""
         if user.is_staff or user.is_superuser:
             return True
         if self.principal_investigator == user:
             return True
         if self.co_principal_investigators.filter(pk=user.pk).exists():
+            return True
+        if self.research_assistants.filter(pk=user.pk).exists():
             return True
         return False
 

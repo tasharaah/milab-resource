@@ -13,7 +13,6 @@ urlpatterns = [
     # Auth
     path('login/',   auth_views.LoginView.as_view(template_name='labapp/login.html'), name='login'),
     path('logout/',  auth_views.LogoutView.as_view(next_page='login'),                name='logout'),
-    path('logout-auto/', views.auto_logout, name='auto_logout'),
 
     # Bookings
     path('bookings/',                               views.my_bookings,            name='my_bookings'),
