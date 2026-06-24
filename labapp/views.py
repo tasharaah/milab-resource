@@ -6,7 +6,7 @@ from __future__ import annotations
 import io
 import json
 from typing import Any, Dict
-
+import requests
 import matplotlib
 matplotlib.use('Agg')  # non-interactive backend
 import matplotlib.pyplot as plt
@@ -56,7 +56,38 @@ def is_faculty_user(user) -> bool:
         getattr(user, 'is_faculty', lambda: False)()
     )
 
+def send_brevo_email(subject, message, recipients):
+    if isinstance(recipients, str):
+        recipients = [recipients]
 
+    if not settings.BREVO_API_KEY:
+        raise Exception("BREVO_API_KEY is missing")
+
+    payload = {
+        "sender": {
+            "name": settings.BREVO_SENDER_NAME,
+            "email": settings.BREVO_SENDER_EMAIL,
+        },
+        "to": [{"email": email} for email in recipients],
+        "subject": subject,
+        "textContent": message,
+    }
+
+    response = requests.post(
+        "https://api.brevo.com/v3/smtp/email",
+        headers={
+            "accept": "application/json",
+            "api-key": settings.BREVO_API_KEY,
+            "content-type": "application/json",
+        },
+        json=payload,
+        timeout=20,
+    )
+
+    if response.status_code >= 400:
+        raise Exception(f"Brevo API error {response.status_code}: {response.text}")
+
+    return response.json()
 # ── Dashboards ─────────────────────────────────────────────────────────────
 
 @login_required
@@ -559,15 +590,14 @@ def user_invitations(request):
             expires_at=timezone.now() + timezone.timedelta(hours=48))
         reg_url = request.build_absolute_uri(f'/register/invite/{inv.token}/')
         try:
-            send_mail(
+            send_brevo_email(
                 subject='MI Lab | You have been invited to register',
                 message=(
                     f"You have been invited to join MI Lab Resource Manager.\n\n"
                     f"Role: {inv.get_role_display()}\n\n"
                     f"Register here (valid 48 hours):\n{reg_url}\n\n— MI Lab, NSU"
                 ),
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[email], fail_silently=False,
+                recipients=[email],
             )
             messages.success(request, f'Invitation sent to {email}.')
         except Exception as e:
@@ -1060,13 +1090,12 @@ def add_announcement(request):
             try:
                 plain = f"{ann.title}\n\n{strip_tags(ann.content)}\n\n— MI Lab, NSU"
 
-                send_mail(
+                send_brevo_email(
                     subject=f'MI Lab Announcement: {ann.title}',
                     message=plain,
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=recipients,
-                    fail_silently=True,
+                    recipients=recipients
                 )
+
             except Exception:
                 pass
         messages.success(request, 'Announcement posted and users notified.')

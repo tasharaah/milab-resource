@@ -162,6 +162,9 @@ EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
 EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "MI Lab <noreply@example.com>")
-
+ 
+BREVO_API_KEY = os.environ.get("BREVO_API_KEY", "")
+BREVO_SENDER_EMAIL = os.environ.get("BREVO_SENDER_EMAIL", "n.n.preetasha29@gmail.com")
+BREVO_SENDER_NAME = os.environ.get("BREVO_SENDER_NAME", "MI Lab - North South University")
 # PWA settings (manifest will be served from static). See templates/base.html
 # Additional configuration can go here if using third‑party PWA packages.
