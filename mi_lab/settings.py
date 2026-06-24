@@ -154,7 +154,8 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 # other outbound emails. By default these values are empty which will
 # disable sending. When deploying, set EMAIL_HOST_USER and
 # EMAIL_HOST_PASSWORD to a valid account (e.g. a Gmail app password).
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+#EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_BACKEND = "labapp.email_backend.BrevoEmailBackend"
 EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
 EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
 EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
