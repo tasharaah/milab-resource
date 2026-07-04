@@ -274,10 +274,16 @@ class AddAdminForm(UserCreationForm):
 
 
 class AssignAdminForm(forms.Form):
-    user       = forms.ModelChoiceField(
-        queryset=User.objects.filter(is_superuser=False),
+    user       = FullNameModelChoiceField(
+        queryset=User.objects.none(),
         widget=forms.Select(attrs={'class': 'form-select'}))
     make_admin = forms.BooleanField(required=False, initial=False, label='Grant Admin Privileges')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['user'].queryset = _users_by_full_name(
+            User.objects.filter(is_superuser=False)
+        )
 
 
 class WeeklyUpdateForm(forms.ModelForm):
