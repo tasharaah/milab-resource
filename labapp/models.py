@@ -208,6 +208,7 @@ class UserInvitation(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField()
     used       = models.BooleanField(default=False)
+    email_sent = models.BooleanField(default=False, help_text='True once the invitation email was delivered successfully.')
 
     class Meta:
         ordering = ['-created_at']

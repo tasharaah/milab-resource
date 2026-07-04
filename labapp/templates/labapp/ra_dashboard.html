@@ -22,33 +22,20 @@
 
 <!-- Stat Cards -->
 <div class="row g-3 mb-4">
-  <div class="col-4">
-    <a href="{% url 'list_resources' %}" class="text-decoration-none">
-      <div class="stat-card">
-        <div class="stat-top">
-          <div class="stat-icon bg-primary"><i class="fa fa-server"></i></div>
-          <div class="stat-text">
-            <div class="stat-label">Total Resources</div>
-            <div class="stat-value">{{ total_resources }}</div>
-          </div>
-        </div>
-      </div>
-    </a>
-  </div>
-  <div class="col-4">
+  <div class="col-6">
     <a href="{% url 'available_resources' %}" class="text-decoration-none">
       <div class="stat-card">
         <div class="stat-top">
           <div class="stat-icon bg-success"><i class="fa fa-circle-check"></i></div>
           <div class="stat-text">
-            <div class="stat-label">Available Now</div>
+            <div class="stat-label">Available Resources</div>
             <div class="stat-value">{{ available_resources }}</div>
           </div>
         </div>
       </div>
     </a>
   </div>
-  <div class="col-4">
+  <div class="col-6">
     <a href="{% url 'my_bookings' %}" class="text-decoration-none">
       <div class="stat-card">
         <div class="stat-top">

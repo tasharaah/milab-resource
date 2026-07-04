@@ -23,7 +23,6 @@
       <thead>
         <tr>
           <th>Resource</th>
-          <th>GPU</th>
           <th>Software</th>
           <th>Start</th>
           <th>End</th>
@@ -35,7 +34,6 @@
         {% for booking in active_bookings %}
         <tr>
           <td><strong style="color:var(--text-primary);">{{ booking.resource.name }}</strong></td>
-          <td><span class="badge bg-info">{{ booking.resource.gpu|default:'—' }}</span></td>
           <td>{{ booking.software|default:'—' }}</td>
           <td style="font-size:.82rem; color:var(--text-muted);">{{ booking.start_time|date:'d M, Y h:i A' }}</td>
           <td style="font-size:.82rem; color:var(--text-muted);">{{ booking.end_time|date:'d M, Y h:i A' }}</td>
@@ -90,7 +88,6 @@
       <thead>
         <tr>
           <th>Resource</th>
-          <th>GPU</th>
           <th>Software</th>
           <th>Start</th>
           <th>End</th>
@@ -101,7 +98,6 @@
         {% for booking in past_bookings %}
         <tr>
           <td>{{ booking.resource.name }}</td>
-          <td><span class="badge bg-secondary">{{ booking.resource.gpu|default:'—' }}</span></td>
           <td>{{ booking.software|default:'—' }}</td>
           <td style="font-size:.82rem; color:var(--text-muted);">{{ booking.start_time|date:'d M, Y h:i A' }}</td>
           <td style="font-size:.82rem; color:var(--text-muted);">{{ booking.end_time|date:'d M, Y h:i A' }}</td>

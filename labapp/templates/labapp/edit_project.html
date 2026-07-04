@@ -69,6 +69,22 @@
             <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk me-2"></i>Save Changes</button>
           </div>
         </form>
+
+        <hr style="margin:1.75rem 0;">
+
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-weight:600;color:var(--text-primary);">Danger Zone</div>
+            <div style="font-size:.85rem;color:var(--text-muted);">Permanently delete this project. This cannot be undone.</div>
+          </div>
+          <form method="post" action="{% url 'delete_project' project.id %}"
+                onsubmit="return confirm('Delete project \'{{ project.name|escapejs }}\'? This cannot be undone.');">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-danger">
+              <i class="fa-solid fa-trash me-2"></i>Delete Project
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   </div>

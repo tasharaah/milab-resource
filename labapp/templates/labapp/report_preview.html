@@ -57,11 +57,6 @@
   <div class="col-6 col-md-3">
     <div class="preview-stat">
       <div class="preview-stat-val">
-        {% with total=0 %}
-          {% for r, h in data.by_res %}{% endfor %}
-          {{ data.by_res|length }}
-        {% endwith %}
-        <!-- JS will fill this -->
         <span id="totalHrs">—</span>h
       </div>
       <div class="preview-stat-label">Total Hours</div>
@@ -167,11 +162,7 @@
           <td style="color:var(--text-muted);">{{ b.project_name|default:'—' }}</td>
           <td style="font-size:.82rem;color:var(--text-muted);">{{ b.start_time|date:'d M, Y h:i A' }}</td>
           <td style="font-size:.82rem;color:var(--text-muted);">{{ b.end_time|date:'d M, Y h:i A'|default:'—' }}</td>
-          <td>
-            {% if b.start_time and b.end_time %}
-              {% widthratio b.end_time|date:'U'|add:b.start_time|date:'U' 3600 1 %}h
-            {% else %}—{% endif %}
-          </td>
+          <td>{{ b.duration_hours|floatformat:1 }}h</td>
         </tr>
         {% endfor %}
       </tbody>

@@ -108,7 +108,6 @@ def ra_dashboard(request):
     busy = Booking.objects.filter(is_active=True, start_time__lte=now, end_time__gte=now
                                   ).values_list('resource_id', flat=True).distinct()
     return render(request, 'labapp/ra_dashboard.html', {
-        'total_resources':     Resource.objects.count(),
         'available_resources': Resource.objects.exclude(id__in=busy).filter(status=Resource.Status.OK).count(),
         'my_active_bookings':  Booking.objects.filter(user=request.user, is_active=True,
                                                        start_time__lte=now, end_time__gte=now),
@@ -266,7 +265,7 @@ def create_booking(request):
                 b.user, b.created_by = assignee, request.user
             else:
                 b.user = b.created_by = request.user
-            b.start_time   = timezone.now()
+            b.start_time   = form.cleaned_data['start_time']
             b.project_name = form.cleaned_data.get('project_name', '')
             b.save()
             messages.success(request, 'Booking created successfully.')
@@ -470,6 +469,18 @@ def edit_project(request, project_id: int):
 
 @never_cache
 @login_required
+def delete_project(request, project_id: int):
+    if not is_faculty_user(request.user): return redirect('projects_list')
+    project = get_object_or_404(Project, pk=project_id)
+    if request.method == 'POST':
+        name = project.name
+        project.delete()
+        messages.success(request, f'Project "{name}" deleted.')
+    return redirect('projects_list')
+
+
+@never_cache
+@login_required
 def add_project_link(request, project_id: int):
     project = get_object_or_404(Project, pk=project_id)
     if not project.can_edit_links(request.user):
@@ -599,14 +610,17 @@ def user_invitations(request):
                 ),
                 recipients=[email],
             )
+            inv.email_sent = True
+            inv.save(update_fields=['email_sent'])
             messages.success(request, f'Invitation sent to {email}.')
         except Exception as e:
-            messages.warning(request, f'Invitation created but email failed: {e}')
+            messages.warning(request, f'Could not send the invitation email: {e}')
         return redirect('user_invitations')
     now = timezone.now()
     return render(request, 'labapp/user_invitations.html', {
         'form': form,
-        'invitations': UserInvitation.objects.filter(used=False, expires_at__gt=now).order_by('-created_at'),
+        'invitations': UserInvitation.objects.filter(
+            used=False, expires_at__gt=now, email_sent=True).order_by('-created_at'),
     })
 
 
@@ -772,7 +786,8 @@ def _build_report_data(ra_param, resource_param, project_param, period, start_pa
     by_res:  dict[str, float] = {}
     by_user: dict[str, float] = {}
     hcounts = [0] * 24
-    for b in bqs:
+    bookings_list = list(bqs.order_by('start_time'))
+    for b in bookings_list:
         s, e = b.start_time, b.end_time or now
         if sd: s = max(s, sd)
         if ed: e = min(e, ed)
@@ -780,9 +795,11 @@ def _build_report_data(ra_param, resource_param, project_param, period, start_pa
         by_res[b.resource.name]  = by_res.get(b.resource.name,  0.0) + d
         by_user[b.user.username] = by_user.get(b.user.username, 0.0) + d
         hcounts[b.start_time.astimezone(timezone.get_current_timezone()).hour] += 1
+        # Precompute for display so templates never have to do date arithmetic.
+        b.duration_hours = d
 
     return {
-        'bookings': bqs.order_by('start_time'),
+        'bookings': bookings_list,
         'by_res':   sorted(by_res.items(),  key=lambda x: x[1], reverse=True),
         'by_user':  sorted(by_user.items(), key=lambda x: x[1], reverse=True),
         'hcounts':  hcounts,
@@ -858,6 +875,19 @@ def print_usage_stats(request):
                                         textColor=colors.HexColor('#4F46E5'), spaceBefore=16, spaceAfter=8)
         body_style  = ParagraphStyle('Body', fontSize=9, fontName='Helvetica',
                                       textColor=colors.HexColor('#475569'), leading=14)
+
+        cell_style = ParagraphStyle('Cell', fontSize=8.5, fontName='Helvetica',
+                                     textColor=colors.HexColor('#1E293B'), leading=11)
+        cell_style_muted = ParagraphStyle('CellMuted', parent=cell_style,
+                                            textColor=colors.HexColor('#64748B'))
+
+        def cell(text):
+            """Wrap a table cell's text in a Paragraph so long values wrap
+            instead of overflowing into neighbouring columns."""
+            return Paragraph(str(text) if text not in (None, '') else '—', cell_style)
+
+        def cell_muted(text):
+            return Paragraph(str(text) if text not in (None, '') else '—', cell_style_muted)
 
         INDIGO = colors.HexColor('#4F46E5')
         TEAL   = colors.HexColor('#06B6D4')
@@ -982,7 +1012,7 @@ def print_usage_stats(request):
             tdata = [['Resource', 'Total Hours', 'Share']]
             total = sum(v for _, v in data['by_res']) or 1
             for rname, hrs in data['by_res']:
-                tdata.append([rname, f'{hrs:.2f}', f'{hrs/total*100:.1f}%'])
+                tdata.append([cell(rname), f'{hrs:.2f}', f'{hrs/total*100:.1f}%'])
             t = Table(tdata, colWidths=[9*cm, 3*cm, 3*cm])
             t.setStyle(TableStyle([
                 ('BACKGROUND',  (0, 0), (-1, 0), INDIGO),
@@ -1004,7 +1034,7 @@ def print_usage_stats(request):
             udata = [['Username', 'Total Hours', 'Share']]
             total = sum(v for _, v in data['by_user']) or 1
             for uname, hrs in data['by_user']:
-                udata.append([uname, f'{hrs:.2f}', f'{hrs/total*100:.1f}%'])
+                udata.append([cell(uname), f'{hrs:.2f}', f'{hrs/total*100:.1f}%'])
             ut = Table(udata, colWidths=[9*cm, 3*cm, 3*cm])
             ut.setStyle(TableStyle([
                 ('BACKGROUND',  (0, 0), (-1, 0), TEAL),
@@ -1024,19 +1054,21 @@ def print_usage_stats(request):
         story.append(PageBreak())
         story.append(Paragraph('Detailed Booking Log', section_style))
         bdata = [['#', 'User', 'Resource', 'Project', 'Start', 'End', 'Duration']]
+        tz = timezone.get_current_timezone()
         for i, b in enumerate(data['bookings'], 1):
-            s = b.start_time; e = b.end_time or now
-            if sd: s = max(s, sd)
-            if ed: e = min(e, ed)
-            d = (e - s).total_seconds() / 3600
-            tz = timezone.get_current_timezone()
+            d = getattr(b, 'duration_hours', None)
+            if d is None:
+                s = b.start_time; e = b.end_time or now
+                if sd: s = max(s, sd)
+                if ed: e = min(e, ed)
+                d = (e - s).total_seconds() / 3600
             bdata.append([
                 str(i),
-                (b.user.get_full_name() or b.user.username)[:18],
-                b.resource.name[:16],
-                (b.project_name or '—')[:18],
-                b.start_time.astimezone(tz).strftime('%d-%b %H:%M'),
-                b.end_time.astimezone(tz).strftime('%d-%b %H:%M') if b.end_time else '—',
+                cell(b.user.get_full_name() or b.user.username),
+                cell(b.resource.name),
+                cell_muted(b.project_name),
+                cell_muted(b.start_time.astimezone(tz).strftime('%d-%b %H:%M')),
+                cell_muted(b.end_time.astimezone(tz).strftime('%d-%b %H:%M') if b.end_time else '—'),
                 f'{d:.1f}h',
             ])
         bt = Table(bdata, colWidths=[1*cm, 3.5*cm, 3*cm, 3.5*cm, 2.5*cm, 2.5*cm, 1.5*cm])
@@ -1154,7 +1186,7 @@ def add_weekly_update(request):
     if is_faculty_user(request.user):
         messages.info(request, 'Faculty cannot submit weekly updates.')
         return redirect('weekly_updates')
-    form = WeeklyUpdateForm(request.POST or None)
+    form = WeeklyUpdateForm(request.POST or None, user=request.user)
     if request.method == 'POST' and form.is_valid():
         u = form.save(commit=False); u.user = request.user; u.save()
         messages.success(request, 'Weekly update submitted.')

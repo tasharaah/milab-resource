@@ -27,10 +27,12 @@
 
           <div class="row g-3 mb-4">
             <div class="col-md-6">
-              <label for="id_project_name" class="form-label">
-                <i class="fa-solid fa-folder me-1" style="color:var(--warning);"></i>Project Name
+              <label for="id_project_select" class="form-label">
+                <i class="fa-solid fa-folder me-1" style="color:var(--warning);"></i>Project
               </label>
+              {{ form.project_select }}
               {{ form.project_name }}
+              {% if form.project_select.errors %}<div class="text-danger mt-1" style="font-size:.82rem;">{{ form.project_select.errors|striptags }}</div>{% endif %}
             </div>
             <div class="col-md-6">
               <label for="id_title" class="form-label">
@@ -39,6 +41,15 @@
               </label>
               {{ form.title }}
             </div>
+          </div>
+
+          <!-- Custom project title (shown only when 'Other' selected) -->
+          <div class="mb-4" id="custom-project-wrap" style="display:none;">
+            <label for="id_project_name_custom" class="form-label">
+              <i class="fa-solid fa-pencil me-1" style="color:var(--primary);"></i>Enter Project Title
+            </label>
+            {{ form.project_name_custom }}
+            {% if form.project_name_custom.errors %}<div class="text-danger mt-1" style="font-size:.82rem;">{{ form.project_name_custom.errors|striptags }}</div>{% endif %}
           </div>
 
           <div class="mb-4">
@@ -80,5 +91,16 @@
   document.getElementById('updateForm').addEventListener('submit', function() {
     document.getElementById('id_content').value = quill.root.innerHTML;
   });
+
+  (function() {
+    const sel  = document.getElementById('id_project_select');
+    const wrap = document.getElementById('custom-project-wrap');
+    function toggleCustom() {
+      if (sel && wrap) {
+        wrap.style.display = sel.value === '__OTHER__' ? '' : 'none';
+      }
+    }
+    if (sel) { sel.addEventListener('change', toggleCustom); toggleCustom(); }
+  })();
 </script>
 {% endblock %}

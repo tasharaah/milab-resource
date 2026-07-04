@@ -18,7 +18,7 @@
     <div class="card">
       <div class="card-body" style="padding:2rem;">
 
-        {% if form.errors %}
+        {% if form.errors and not form.conflict_info %}
         <div class="alert alert-danger mb-4">{{ form.errors }}</div>
         {% endif %}
 
@@ -33,20 +33,14 @@
             {{ form.resource }}
           </div>
 
-          <!-- Start time display (read-only info) -->
           <div class="mb-4">
-            <label class="form-label">
+            <label for="id_start_time" class="form-label">
               <i class="fa-solid fa-play me-1" style="color:var(--success);"></i>Start Time
             </label>
-            <div style="display:flex;align-items:center;gap:.75rem;background:var(--success-light);
-                        border:1px solid #A7F3D0;border-radius:var(--radius-sm);padding:.6rem 1rem;">
-              <i class="fa-solid fa-circle-dot" style="color:var(--success);font-size:.8rem;"></i>
-              <span style="font-size:.875rem;font-weight:600;color:#065F46;" id="start-time-display">
-                {{ now_local|date:"d M, Y h:i A" }}
-              </span>
-              <span style="font-size:.75rem;color:#059669;margin-left:auto;">Starts immediately</span>
-            </div>
             {{ form.start_time }}
+            <div style="font-size:.78rem;color:var(--text-muted);margin-top:.35rem;">
+              <i class="fa-solid fa-circle-info me-1"></i>Book for right now, or pick any time in the future.
+            </div>
           </div>
 
           <div class="mb-4">
@@ -101,6 +95,32 @@
   </div>
 </div>
 
+{% if form.conflict_info %}
+<div class="modal fade" id="conflictModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" style="color:var(--danger);">
+          <i class="fa-solid fa-triangle-exclamation me-2"></i>Resource Already Booked
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-2"><strong>{{ form.conflict_info.resource }}</strong> is already booked for that time range:</p>
+        <div style="background:var(--danger-light, #FEE2E2);border-radius:var(--radius-sm);padding:.6rem 1rem;font-size:.9rem;">
+          <i class="fa-solid fa-clock me-1"></i>
+          {{ form.conflict_info.start|date:"d M Y, h:i A" }} &nbsp;&rarr;&nbsp; {{ form.conflict_info.end|date:"d M Y, h:i A" }}
+        </div>
+        <p class="text-muted mt-3 mb-0" style="font-size:.85rem;">Please choose a different time or a different resource.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 {% endblock %}
 
 {% block extra_js %}
@@ -115,6 +135,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
   if (sel) { sel.addEventListener('change', toggleCustom); toggleCustom(); }
+
+  {% if form.conflict_info %}
+  const conflictModalEl = document.getElementById('conflictModal');
+  if (conflictModalEl) {
+    new bootstrap.Modal(conflictModalEl).show();
+  }
+  {% endif %}
 });
 </script>
 {% endblock %}
