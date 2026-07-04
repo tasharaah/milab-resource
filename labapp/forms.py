@@ -13,6 +13,33 @@ from django.contrib.auth.hashers import make_password
 User = get_user_model()
 
 
+class FullNameModelChoiceField(forms.ModelChoiceField):
+    """Displays a user's full name (falling back to username) in dropdown options."""
+    def label_from_instance(self, obj):
+        return obj.get_full_name() or obj.username
+
+
+class FullNameModelMultipleChoiceField(forms.ModelMultipleChoiceField):
+    """Displays a user's full name (falling back to username) in dropdown options."""
+    def label_from_instance(self, obj):
+        return obj.get_full_name() or obj.username
+
+
+def _users_by_full_name(queryset=None):
+    """Users ordered alphabetically by full name (falls back to username)."""
+    from django.db.models import Case, When, Value, CharField
+    from django.db.models.functions import Concat, Trim
+
+    qs = queryset if queryset is not None else User.objects.filter(is_superuser=False)
+    return qs.annotate(
+        sort_name=Case(
+            When(first_name='', last_name='', then='username'),
+            default=Trim(Concat('first_name', Value(' '), 'last_name', output_field=CharField())),
+            output_field=CharField(),
+        )
+    ).order_by('sort_name')
+
+
 class BookingForm(forms.ModelForm):
     start_time = forms.DateTimeField(
         widget=forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
@@ -34,7 +61,7 @@ class BookingForm(forms.ModelForm):
             'id': 'id_project_name_custom',
         }),
     )
-    assignee = forms.ModelChoiceField(
+    assignee = FullNameModelChoiceField(
         queryset=User.objects.none(), required=False, label='Assign To',
         widget=forms.Select(attrs={'class': 'form-select'}),
     )
@@ -58,9 +85,9 @@ class BookingForm(forms.ModelForm):
         except Exception:
             pass
         try:
-            self.fields['assignee'].queryset = User.objects.filter(
-                role__in=[User.Role.RA, User.Role.STUDENT, User.Role.INTERN]
-            ).order_by('username')
+            self.fields['assignee'].queryset = _users_by_full_name(
+                User.objects.filter(role__in=[User.Role.RA, User.Role.STUDENT, User.Role.INTERN])
+            )
         except Exception:
             pass
         choices = [('', '— Select a project —')]
@@ -122,32 +149,6 @@ class ResourceForm(forms.ModelForm):
         if qs.exists():
             raise forms.ValidationError('A resource with this name already exists.')
         return name
-
-
-class FullNameModelChoiceField(forms.ModelChoiceField):
-    """Displays a user's full name (falling back to username) in dropdown options."""
-    def label_from_instance(self, obj):
-        return obj.get_full_name() or obj.username
-
-
-class FullNameModelMultipleChoiceField(forms.ModelMultipleChoiceField):
-    """Displays a user's full name (falling back to username) in dropdown options."""
-    def label_from_instance(self, obj):
-        return obj.get_full_name() or obj.username
-
-
-def _users_by_full_name():
-    """All non-superuser users, ordered alphabetically by full name (falls back to username)."""
-    from django.db.models import Case, When, Value, CharField
-    from django.db.models.functions import Concat, Trim
-
-    return User.objects.filter(is_superuser=False).annotate(
-        sort_name=Case(
-            When(first_name='', last_name='', then='username'),
-            default=Trim(Concat('first_name', Value(' '), 'last_name', output_field=CharField())),
-            output_field=CharField(),
-        )
-    ).order_by('sort_name')
 
 
 class ProjectForm(forms.ModelForm):
