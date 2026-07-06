@@ -1,10 +1,11 @@
 import base64
 from email.message import EmailMessage
 
+import requests
 from django.conf import settings
 from django.core.mail.backends.base import BaseEmailBackend
+from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
-from googleapiclient.discovery import build
 
 
 GMAIL_SEND_SCOPE = "https://www.googleapis.com/auth/gmail.send"
@@ -12,7 +13,7 @@ GMAIL_SEND_SCOPE = "https://www.googleapis.com/auth/gmail.send"
 
 class GmailApiEmailBackend(BaseEmailBackend):
 
-    def _get_service(self):
+    def _get_credentials(self):
         credentials = Credentials(
             token=None,
             refresh_token=settings.GMAIL_REFRESH_TOKEN,
@@ -22,18 +23,27 @@ class GmailApiEmailBackend(BaseEmailBackend):
             scopes=[GMAIL_SEND_SCOPE],
         )
 
-        return build(
-            "gmail",
-            "v1",
-            credentials=credentials,
-            cache_discovery=False,
-        )
+        # Refresh using requests-based transport
+        credentials.refresh(Request())
+
+        return credentials
 
     def send_messages(self, email_messages):
         if not email_messages:
             return 0
 
-        service = self._get_service()
+        credentials = self._get_credentials()
+
+        url = (
+            "https://gmail.googleapis.com/"
+            "gmail/v1/users/me/messages/send"
+        )
+
+        headers = {
+            "Authorization": f"Bearer {credentials.token}",
+            "Content-Type": "application/json",
+        }
+
         sent_count = 0
 
         for email in email_messages:
@@ -55,7 +65,7 @@ class GmailApiEmailBackend(BaseEmailBackend):
 
                 message.set_content(email.body or "")
 
-                # Include HTML version when Django supplies one
+                # Preserve Django HTML alternatives
                 if hasattr(email, "alternatives"):
                     for alternative in email.alternatives:
                         content = alternative[0]
@@ -67,14 +77,23 @@ class GmailApiEmailBackend(BaseEmailBackend):
                                 subtype="html",
                             )
 
-                raw = base64.urlsafe_b64encode(
+                raw_message = base64.urlsafe_b64encode(
                     message.as_bytes()
-                ).decode()
+                ).decode("utf-8")
 
-                service.users().messages().send(
-                    userId="me",
-                    body={"raw": raw},
-                ).execute()
+                response = requests.post(
+                    url,
+                    headers=headers,
+                    json={"raw": raw_message},
+                    timeout=30,
+                )
+
+                if response.status_code >= 400:
+                    raise RuntimeError(
+                        f"Gmail API error "
+                        f"{response.status_code}: "
+                        f"{response.text}"
+                    )
 
                 sent_count += 1
 
