@@ -601,14 +601,16 @@ def user_invitations(request):
             expires_at=timezone.now() + timezone.timedelta(hours=48))
         reg_url = request.build_absolute_uri(f'/register/invite/{inv.token}/')
         try:
-            send_brevo_email(
+            send_mail(
                 subject='MI Lab | You have been invited to register',
                 message=(
                     f"You have been invited to join MI Lab Resource Manager.\n\n"
                     f"Role: {inv.get_role_display()}\n\n"
                     f"Register here (valid 48 hours):\n{reg_url}\n\n— MI Lab, NSU"
                 ),
-                recipients=[email],
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[email],
+                fail_silently=False,
             )
             inv.email_sent = True
             inv.save(update_fields=['email_sent'])
@@ -1122,10 +1124,12 @@ def add_announcement(request):
             try:
                 plain = f"{ann.title}\n\n{strip_tags(ann.content)}\n\n— MI Lab, NSU"
 
-                send_brevo_email(
+                send_mail(
                     subject=f'MI Lab Announcement: {ann.title}',
                     message=plain,
-                    recipients=recipients
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=recipients,
+                    fail_silently=False,
                 )
 
             except Exception:

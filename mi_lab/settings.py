@@ -149,23 +149,28 @@ LOGOUT_REDIRECT_URL = "/login/"
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
 # Email settings
-#
-# Configure SMTP settings via environment variables for password reset and
-# other outbound emails. By default these values are empty which will
-# disable sending. When deploying, set EMAIL_HOST_USER and
-# EMAIL_HOST_PASSWORD to a valid account (e.g. a Gmail app password).
+GMAIL_CLIENT_ID = os.environ.get("GMAIL_CLIENT_ID", "")
+GMAIL_CLIENT_SECRET = os.environ.get("GMAIL_CLIENT_SECRET", "")
+GMAIL_REFRESH_TOKEN = os.environ.get("GMAIL_REFRESH_TOKEN", "")
+
+GMAIL_SENDER_EMAIL = os.environ.get("GMAIL_SENDER_EMAIL", "")
+GMAIL_SENDER_NAME = os.environ.get(
+    "GMAIL_SENDER_NAME",
+    "MI Lab - North South University",
+)
+EMAIL_BACKEND = "labapp.gmail_backend.GmailApiEmailBackend"
 #EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_BACKEND = "labapp.email_backend.BrevoEmailBackend"
+#EMAIL_BACKEND = "labapp.email_backend.BrevoEmailBackend"
 EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
 EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
 EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
 
 EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
-DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "MI Lab <noreply@example.com>")
- 
+DEFAULT_FROM_EMAIL = os.environ.get(
+    "DEFAULT_FROM_EMAIL",
+    f"{GMAIL_SENDER_NAME} <{GMAIL_SENDER_EMAIL}>"
+) 
 BREVO_API_KEY = os.environ.get("BREVO_API_KEY", "")
 BREVO_SENDER_EMAIL = os.environ.get("BREVO_SENDER_EMAIL", "n.n.preetasha29@gmail.com")
 BREVO_SENDER_NAME = os.environ.get("BREVO_SENDER_NAME", "MI Lab - North South University")
-# PWA settings (manifest will be served from static). See templates/base.html
-# Additional configuration can go here if using third‑party PWA packages.
