@@ -1205,6 +1205,38 @@ def add_weekly_update(request):
     return render(request, 'labapp/add_weekly_update.html', {'form': form})
 
 
+@never_cache
+@login_required
+def edit_weekly_update(request, update_id: int):
+    from .models import WeeklyUpdate
+    upd = get_object_or_404(WeeklyUpdate, pk=update_id)
+    if upd.user != request.user:
+        messages.error(request, 'Not authorized.')
+        return redirect('weekly_updates')
+    form = WeeklyUpdateForm(request.POST or None, instance=upd, user=request.user)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'Weekly update updated.')
+        return redirect('weekly_updates')
+    elif request.method == 'POST':
+        messages.error(request, 'Please correct the errors.')
+    return render(request, 'labapp/add_weekly_update.html', {'form': form, 'editing': True, 'upd': upd})
+
+
+@never_cache
+@login_required
+def delete_weekly_update(request, update_id: int):
+    from .models import WeeklyUpdate
+    upd = get_object_or_404(WeeklyUpdate, pk=update_id)
+    if not is_faculty_user(request.user):
+        messages.error(request, 'Not authorized.')
+        return redirect('weekly_updates')
+    if request.method == 'POST':
+        upd.delete()
+        messages.success(request, 'Weekly update deleted.')
+    return redirect('weekly_updates')
+
+
 # ── Backwards-compat stubs ──────────────────────────────────────────────────
 
 def register_request(request):              return redirect('login')

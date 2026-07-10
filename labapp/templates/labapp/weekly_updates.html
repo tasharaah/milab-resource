@@ -29,17 +29,42 @@
           </p>
           {% endif %}
         </div>
-        <span style="background:var(--primary-light); color:var(--primary-dark);
-                     border-radius:999px; font-size:.72rem; font-weight:600;
-                     padding:.25rem .7rem; white-space:nowrap;">
-          {{ update.created_at|date:'d M Y' }}
-        </span>
+        <div class="d-flex align-items-center gap-2">
+          <span style="background:var(--primary-light); color:var(--primary-dark);
+                       border-radius:999px; font-size:.72rem; font-weight:600;
+                       padding:.25rem .7rem; white-space:nowrap;">
+            {{ update.created_at|date:'d M Y' }}
+          </span>
+          {% if update.user == user or user.is_staff or user.is_superuser or user.role == 'Faculty' %}
+          <div class="d-flex gap-2 align-items-center">
+            {% if update.user == user %}
+            <a href="{% url 'edit_weekly_update' update.id %}" class="btn btn-sm btn-secondary" title="Edit">
+              <i class="fa-solid fa-pen"></i>
+            </a>
+            {% endif %}
+            {% if user.is_staff or user.is_superuser or user.role == 'Faculty' %}
+            <form method="post" action="{% url 'delete_weekly_update' update.id %}"
+                  onsubmit="return confirm('Delete this weekly update?');" class="d-inline">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm btn-danger" title="Delete">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </form>
+            {% endif %}
+          </div>
+          {% endif %}
+        </div>
       </div>
       <div class="content-card-meta mt-2">
         {% if user.is_staff or user.is_superuser or user.role == 'Faculty' %}
         <span><i class="fa-solid fa-user"></i>{{ update.user.get_full_name|default:update.user.username }}</span>
         {% endif %}
         <span><i class="fa-solid fa-clock"></i>{{ update.created_at|date:'h:i A' }}</span>
+        {% if update.updated_at != update.created_at %}
+          <span style="color:var(--text-muted);font-style:italic;">
+            <i class="fa-solid fa-pen-to-square"></i>Edited {{ update.updated_at|date:'d M Y' }}
+          </span>
+        {% endif %}
       </div>
     </div>
     <div class="content-card-body">

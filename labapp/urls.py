@@ -60,6 +60,8 @@ urlpatterns = [
     # Updates & Announcements
     path('updates/',                                views.weekly_updates,         name='weekly_updates'),
     path('updates/new/',                            views.add_weekly_update,      name='add_weekly_update'),
+    path('updates/<int:update_id>/edit/',           views.edit_weekly_update,     name='edit_weekly_update'),
+    path('updates/<int:update_id>/delete/',         views.delete_weekly_update,   name='delete_weekly_update'),
     path('announcements/',                          views.announcements,          name='announcements'),
     path('announcements/new/',                      views.add_announcement,       name='add_announcement'),
     path('announcements/<int:ann_id>/edit/',        views.edit_announcement,      name='edit_announcement'),
