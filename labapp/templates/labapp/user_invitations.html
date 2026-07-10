@@ -52,7 +52,7 @@
 
   <!-- Pending Invitations -->
   <div class="col-lg-8">
-    <div class="section-title"><i class="fa-solid fa-clock me-1"></i> Pending Invitations</div>
+    <div class="section-title"><i class="fa-solid fa-clock me-1"></i> Invitations</div>
 
     {% if invitations %}
     <div class="data-table-wrap">
@@ -80,7 +80,7 @@
               <td style="font-size:.82rem;color:var(--text-muted);">{{ inv.expires_at|date:'d M, Y h:i A' }}</td>
               <td>
                 {% if inv.used %}
-                  <span class="badge bg-secondary">Used</span>
+                  <span class="badge bg-success"><i class="fa-solid fa-circle-check me-1" style="font-size:.6rem;"></i>Registered</span>
                 {% elif inv.is_expired %}
                   <span class="badge bg-danger">Expired</span>
                 {% else %}

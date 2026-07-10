@@ -130,6 +130,7 @@
     .modal-content{border:1px solid var(--border);border-radius:var(--radius-xl);box-shadow:var(--shadow-xl);}
     .modal-header{border-bottom:1px solid var(--border);}
     .modal-footer{border-top:1px solid var(--border);}
+    .badge-unread{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;margin-left:.4rem;background:var(--danger,#EF4444);color:#fff;font-size:.68rem;font-weight:700;line-height:1;border-radius:999px;vertical-align:middle;}
   </style>
   {% block extra_head %}{% endblock %}
 </head>
@@ -195,10 +196,23 @@
     <div class="nav-divider"></div>
     <a class="nav-item-link" href="{% url 'projects_list' %}"><i class="fa-solid fa-diagram-project"></i> Projects</a>
     <div class="dropdown">
-      <button class="nav-item-link dropdown-toggle" type="button" data-bs-toggle="dropdown"><i class="fa-solid fa-bell"></i> Updates</button>
+      <button class="nav-item-link dropdown-toggle" type="button" data-bs-toggle="dropdown">
+        <i class="fa-solid fa-bell"></i> Updates
+        {% if unread_updates_total %}<span class="badge-unread">{{ unread_updates_total }}</span>{% endif %}
+      </button>
       <ul class="dropdown-menu">
-        <li><a class="dropdown-item" href="{% url 'weekly_updates' %}"><i class="fa-solid fa-calendar-week me-2"></i>Weekly Updates</a></li>
-        <li><a class="dropdown-item" href="{% url 'announcements' %}"><i class="fa-solid fa-bullhorn me-2"></i>Announcements</a></li>
+        <li>
+          <a class="dropdown-item d-flex align-items-center justify-content-between" href="{% url 'weekly_updates' %}">
+            <span><i class="fa-solid fa-calendar-week me-2"></i>Weekly Updates</span>
+            {% if unread_weekly_updates_count %}<span class="badge-unread">{{ unread_weekly_updates_count }}</span>{% endif %}
+          </a>
+        </li>
+        <li>
+          <a class="dropdown-item d-flex align-items-center justify-content-between" href="{% url 'announcements' %}">
+            <span><i class="fa-solid fa-bullhorn me-2"></i>Announcements</span>
+            {% if unread_announcements_count %}<span class="badge-unread">{{ unread_announcements_count }}</span>{% endif %}
+          </a>
+        </li>
       </ul>
     </div>
   </div>

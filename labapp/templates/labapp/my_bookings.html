@@ -23,7 +23,7 @@
       <thead>
         <tr>
           <th>Resource</th>
-          <th>Software</th>
+          <th>Project Name</th>
           <th>Start</th>
           <th>End</th>
           <th>Description</th>
@@ -34,7 +34,7 @@
         {% for booking in active_bookings %}
         <tr>
           <td><strong style="color:var(--text-primary);">{{ booking.resource.name }}</strong></td>
-          <td>{{ booking.software|default:'—' }}</td>
+          <td>{{ booking.project_name|default:'—' }}</td>
           <td style="font-size:.82rem; color:var(--text-muted);">{{ booking.start_time|date:'d M, Y h:i A' }}</td>
           <td style="font-size:.82rem; color:var(--text-muted);">{{ booking.end_time|date:'d M, Y h:i A' }}</td>
           <td style="min-width:220px;">
@@ -88,7 +88,7 @@
       <thead>
         <tr>
           <th>Resource</th>
-          <th>Software</th>
+          <th>Project Name</th>
           <th>Start</th>
           <th>End</th>
           <th>Description</th>
@@ -98,7 +98,7 @@
         {% for booking in past_bookings %}
         <tr>
           <td>{{ booking.resource.name }}</td>
-          <td>{{ booking.software|default:'—' }}</td>
+          <td>{{ booking.project_name|default:'—' }}</td>
           <td style="font-size:.82rem; color:var(--text-muted);">{{ booking.start_time|date:'d M, Y h:i A' }}</td>
           <td style="font-size:.82rem; color:var(--text-muted);">{{ booking.end_time|date:'d M, Y h:i A' }}</td>
           <td style="min-width:200px; color:var(--text-muted);">{{ booking.description|default:'—' }}</td>

@@ -22,6 +22,11 @@ class User(AbstractUser):
     phone = models.CharField(max_length=20, blank=True)
     bio   = models.TextField(blank=True, help_text='Short bio or description')
 
+    # Tracks when the user last viewed each updates feed, used to compute
+    # "unread" badge counts (like unread counters in mobile apps).
+    last_seen_announcements  = models.DateTimeField(null=True, blank=True)
+    last_seen_weekly_updates = models.DateTimeField(null=True, blank=True)
+
     def is_ra(self)      -> bool: return self.role == self.Role.RA
     def is_student(self) -> bool: return self.role == self.Role.STUDENT
     def is_intern(self)  -> bool: return self.role == self.Role.INTERN

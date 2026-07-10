@@ -31,16 +31,16 @@
     <table class="table">
       <thead>
         <tr>
-          <th>Username</th><th>Full Name</th><th>Role</th><th>Email</th><th>Phone</th><th>Contact</th><th style="width:80px;">Action</th>
+          <th>Full Name</th><th>Username</th><th>Role</th><th>Email</th><th>Phone</th><th>Contact</th><th style="width:80px;">Action</th>
         </tr>
       </thead>
       <tbody>
         {% for u in users %}
         <tr>
           <td>
-            <a href="{% url 'user_profile' u.id %}" style="font-weight:600;color:var(--primary);">{{ u.username }}</a>
+            <a href="{% url 'user_profile' u.id %}" style="font-weight:600;color:var(--primary);">{{ u.get_full_name|default:u.username }}</a>
           </td>
-          <td>{{ u.get_full_name|default:u.username }}</td>
+          <td>{{ u.username }}</td>
           <td>
             <span class="badge {% if u.role == 'Faculty' %}bg-primary{% elif u.role == 'RA' %}bg-danger{% elif u.role == 'Student' %}bg-success{% elif u.role == 'Intern' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
               {{ u.role }}

@@ -3,16 +3,9 @@ Views for the MI Lab web application.
 """
 from __future__ import annotations
 
-import io
 import json
 from typing import Any, Dict
 import requests
-import matplotlib
-matplotlib.use('Agg')  # non-interactive backend
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
-from matplotlib.ticker import MaxNLocator
-from matplotlib import colors as mcolors
 
 from django.conf import settings
 from django.contrib import messages
@@ -31,8 +24,10 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch, cm
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
-    PageBreak, Image as RLImage, HRFlowable,
+    PageBreak, HRFlowable,
 )
+from reportlab.graphics.shapes import Drawing
+from reportlab.graphics.charts.barcharts import HorizontalBarChart, VerticalBarChart
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 from django.utils.html import strip_tags
 
@@ -55,6 +50,10 @@ def is_faculty_user(user) -> bool:
         user.is_staff or user.is_superuser or
         getattr(user, 'is_faculty', lambda: False)()
     )
+
+def _display_name(u) -> str:
+    """Full name for display, falling back to username if not set."""
+    return u.get_full_name() or u.username
 
 def send_brevo_email(subject, message, recipients):
     if isinstance(recipients, str):
@@ -155,7 +154,7 @@ def faculty_dashboard(request):
             if ed: e = min(e, ed)
             d = (e - s).total_seconds() / 3600
             by_res[b.resource.name]  = by_res.get(b.resource.name,  0.0) + d
-            by_user[b.user.username] = by_user.get(b.user.username, 0.0) + d
+            by_user[_display_name(b.user)] = by_user.get(_display_name(b.user), 0.0) + d
             hours[b.start_time.astimezone(timezone.get_current_timezone()).hour] += 1
         return by_res, by_user, hours
 
@@ -200,7 +199,7 @@ def faculty_dashboard(request):
         s, e = b.start_time, b.end_time or now
         if us: s = max(s, us)
         if ue: e = min(e, ue)
-        dur_usr[b.user.username] = dur_usr.get(b.user.username, 0.0) + (e - s).total_seconds() / 3600
+        dur_usr[_display_name(b.user)] = dur_usr.get(_display_name(b.user), 0.0) + (e - s).total_seconds() / 3600
     top5 = sorted(dur_usr.items(), key=lambda x: x[1], reverse=True)[:5]
 
     # Hours
@@ -563,12 +562,13 @@ def edit_profile(request):
 def manage_users(request):
     if not is_faculty_user(request.user): return redirect('ra_dashboard')
     role_filter = request.GET.get('role', 'all')
-    qs = User.objects.filter(is_superuser=False).order_by('username')
+    qs = User.objects.filter(is_superuser=False)
     valid = [r for r, _ in User.Role.choices]
     if role_filter in valid:
         qs = qs.filter(role=role_filter)
+    users = sorted(qs, key=lambda u: _display_name(u).lower())
     return render(request, 'labapp/manage_users.html', {
-        'users':            qs,
+        'users':            users,
         'roles_for_filter': [('all', 'All Roles')] + list(User.Role.choices),
         'selected_role':    role_filter,
     })
@@ -618,11 +618,10 @@ def user_invitations(request):
         except Exception as e:
             messages.warning(request, f'Could not send the invitation email: {e}')
         return redirect('user_invitations')
-    now = timezone.now()
     return render(request, 'labapp/user_invitations.html', {
         'form': form,
         'invitations': UserInvitation.objects.filter(
-            used=False, expires_at__gt=now, email_sent=True).order_by('-created_at'),
+            email_sent=True).order_by('-created_at'),
     })
 
 
@@ -733,7 +732,7 @@ def stats(request):
         if ed: e = min(e, ed)
         d = (e - s).total_seconds() / 3600
         by_res[b.resource.name]  = by_res.get(b.resource.name,  0.0) + d
-        by_usr[b.user.username]  = by_usr.get(b.user.username,  0.0) + d
+        by_usr[_display_name(b.user)]  = by_usr.get(_display_name(b.user),  0.0) + d
         hc[b.start_time.astimezone(timezone.get_current_timezone()).hour] += 1
     sr = sorted(by_res.items(), key=lambda x: x[1], reverse=True)
     su = sorted(by_usr.items(), key=lambda x: x[1], reverse=True)[:5]
@@ -795,7 +794,7 @@ def _build_report_data(ra_param, resource_param, project_param, period, start_pa
         if ed: e = min(e, ed)
         d = (e - s).total_seconds() / 3600
         by_res[b.resource.name]  = by_res.get(b.resource.name,  0.0) + d
-        by_user[b.user.username] = by_user.get(b.user.username, 0.0) + d
+        by_user[_display_name(b.user)] = by_user.get(_display_name(b.user), 0.0) + d
         hcounts[b.start_time.astimezone(timezone.get_current_timezone()).hour] += 1
         # Precompute for display so templates never have to do date arithmetic.
         b.duration_hours = d
@@ -809,16 +808,62 @@ def _build_report_data(ra_param, resource_param, project_param, period, start_pa
     }
 
 
-def _make_chart_png(fig_func, width=500, height=280):
-    """Render a matplotlib figure to PNG bytes."""
-    fig, ax = plt.subplots(figsize=(width / 96, height / 96), dpi=96)
-    fig_func(ax)
-    buf = io.BytesIO()
-    fig.savefig(buf, format='png', bbox_inches='tight', transparent=False,
-                facecolor='white', dpi=150)
-    plt.close(fig)
-    buf.seek(0)
-    return buf
+def _hbar_chart(labels, values, width, height, value_fmt='%.1fh'):
+    """A simple grayscale horizontal bar chart (reportlab native, no images)."""
+    d = Drawing(width, height)
+    left_margin = min(140, max(70, width * 0.32))
+    bc = HorizontalBarChart()
+    bc.x = left_margin
+    bc.y = 14
+    bc.height = max(20, height - 30)
+    bc.width = max(40, width - left_margin - 45)
+    bc.data = [values]
+    bc.categoryAxis.categoryNames = [str(l)[:24] for l in labels]
+    bc.categoryAxis.labels.fontName = 'Helvetica'
+    bc.categoryAxis.labels.fontSize = 8
+    bc.categoryAxis.labels.fillColor = colors.HexColor('#1E293B')
+    bc.valueAxis.valueMin = 0
+    bc.valueAxis.labels.fontSize = 7.5
+    bc.valueAxis.labels.fillColor = colors.HexColor('#475569')
+    bc.bars[0].fillColor = colors.HexColor('#334155')
+    bc.bars.strokeColor = None
+    bc.barLabelFormat = value_fmt
+    bc.barLabels.fontSize = 7.5
+    bc.barLabels.fillColor = colors.HexColor('#1E293B')
+    bc.barLabels.nudge = 8
+    d.add(bc)
+    return d
+
+
+def _vbar_chart(labels, values, width, height, value_fmt='%.1f'):
+    """A simple grayscale vertical bar chart (reportlab native, no images)."""
+    d = Drawing(width, height)
+    bottom_margin = 55
+    bc = VerticalBarChart()
+    bc.x = 45
+    bc.y = bottom_margin
+    bc.height = max(20, height - bottom_margin - 20)
+    bc.width = max(40, width - 70)
+    bc.data = [values]
+    bc.categoryAxis.categoryNames = [str(l)[:16] for l in labels]
+    bc.categoryAxis.labels.fontName = 'Helvetica'
+    bc.categoryAxis.labels.fontSize = 7.5
+    bc.categoryAxis.labels.fillColor = colors.HexColor('#1E293B')
+    bc.categoryAxis.labels.angle = 30
+    bc.categoryAxis.labels.dy = -4
+    bc.categoryAxis.labels.dx = -4
+    bc.categoryAxis.labels.boxAnchor = 'ne'
+    bc.valueAxis.valueMin = 0
+    bc.valueAxis.labels.fontSize = 7.5
+    bc.valueAxis.labels.fillColor = colors.HexColor('#475569')
+    bc.bars[0].fillColor = colors.HexColor('#334155')
+    bc.bars.strokeColor = None
+    bc.barLabelFormat = value_fmt
+    bc.barLabels.fontSize = 7.5
+    bc.barLabels.fillColor = colors.HexColor('#1E293B')
+    bc.barLabels.dy = 6
+    d.add(bc)
+    return d
 
 
 @never_cache
@@ -867,14 +912,15 @@ def print_usage_stats(request):
         W, H = A4
         styles = getSampleStyleSheet()
 
-        # Custom styles
+        # Custom styles — a clean black & white report (no images, no color
+        # dependency, so nothing can distort or render oddly across viewers).
         title_style = ParagraphStyle('ReportTitle', fontSize=20, fontName='Helvetica-Bold',
                                       textColor=colors.HexColor('#0F172A'), spaceAfter=4,
                                       alignment=TA_LEFT)
         sub_style   = ParagraphStyle('ReportSub',   fontSize=10, fontName='Helvetica',
                                       textColor=colors.HexColor('#475569'), spaceAfter=16)
         section_style = ParagraphStyle('Section', fontSize=13, fontName='Helvetica-Bold',
-                                        textColor=colors.HexColor('#4F46E5'), spaceBefore=16, spaceAfter=8)
+                                        textColor=colors.HexColor('#0F172A'), spaceBefore=16, spaceAfter=8)
         body_style  = ParagraphStyle('Body', fontSize=9, fontName='Helvetica',
                                       textColor=colors.HexColor('#475569'), leading=14)
 
@@ -891,16 +937,11 @@ def print_usage_stats(request):
         def cell_muted(text):
             return Paragraph(str(text) if text not in (None, '') else '—', cell_style_muted)
 
-        INDIGO = colors.HexColor('#4F46E5')
-        TEAL   = colors.HexColor('#06B6D4')
-        GREEN  = colors.HexColor('#10B981')
-        AMBER  = colors.HexColor('#F59E0B')
-        ROSE   = colors.HexColor('#F43F5E')
-        GRAY   = colors.HexColor('#94A3B8')
-        LIGHT  = colors.HexColor('#F8FAFC')
-
-        palette = ['#4F46E5', '#06B6D4', '#10B981', '#F59E0B', '#F43F5E',
-           '#8B5CF6', '#EC4899', '#14B8A6']
+        INK      = colors.HexColor('#0F172A')  # near-black for headers/rules
+        SLATE    = colors.HexColor('#334155')
+        MUTED    = colors.HexColor('#64748B')
+        BORDER   = colors.HexColor('#CBD5E1')
+        STRIPE   = colors.HexColor('#F1F5F9')
 
         story = []
 
@@ -910,7 +951,7 @@ def print_usage_stats(request):
             period_str = f"{sd.date()} — {(ed - timezone.timedelta(days=1)).date()}"
         story.append(Paragraph('MI Lab Resource Manager', title_style))
         story.append(Paragraph(f'Usage Report  ·  {period_str}  ·  Generated {now.strftime("%d %b %Y, %I:%M %p")}', sub_style))
-        story.append(HRFlowable(width='100%', thickness=2, color=INDIGO))
+        story.append(HRFlowable(width='100%', thickness=1.4, color=INK))
         story.append(Spacer(1, 0.3*cm))
 
         # ── Summary stat boxes ──
@@ -926,47 +967,31 @@ def print_usage_stats(request):
         ]
         stat_table = Table(stat_data, colWidths=[(W - 3*cm) / 4] * 4)
         stat_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), INDIGO),
+            ('BACKGROUND', (0, 0), (-1, 0), INK),
             ('TEXTCOLOR',  (0, 0), (-1, 0), colors.white),
             ('FONTNAME',   (0, 0), (-1, 0), 'Helvetica-Bold'),
             ('FONTSIZE',   (0, 0), (-1, 0), 9),
             ('FONTNAME',   (0, 1), (-1, 1), 'Helvetica-Bold'),
             ('FONTSIZE',   (0, 1), (-1, 1), 18),
-            ('TEXTCOLOR',  (0, 1), (-1, 1), INDIGO),
-            ('BACKGROUND', (0, 1), (-1, 1), LIGHT),
+            ('TEXTCOLOR',  (0, 1), (-1, 1), INK),
+            ('BACKGROUND', (0, 1), (-1, 1), STRIPE),
             ('ALIGN',      (0, 0), (-1, -1), 'CENTER'),
             ('VALIGN',     (0, 0), (-1, -1), 'MIDDLE'),
-            ('ROWBACKGROUNDS', (0, 0), (-1, 0), [INDIGO]),
-            ('BOX',        (0, 0), (-1, -1), 1, colors.HexColor('#E2E8F0')),
-            ('INNERGRID',  (0, 0), (-1, -1), 0.5, colors.HexColor('#E2E8F0')),
+            ('BOX',        (0, 0), (-1, -1), 1, BORDER),
+            ('INNERGRID',  (0, 0), (-1, -1), 0.5, BORDER),
             ('TOPPADDING', (0, 0), (-1, -1), 10),
             ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
-            ('ROUNDEDCORNERS', [6]),
         ]))
         story.append(stat_table)
         story.append(Spacer(1, 0.4*cm))
 
-        # ── Chart: Resource Usage Bar ──
+        # ── Chart: Resource Usage Bar (native vector chart — no distortion) ──
         if data['by_res']:
             story.append(Paragraph('Resource Usage (Hours)', section_style))
             res_names = [r for r, _ in data['by_res'][:10]]
-            res_vals  = [v for _, v in data['by_res'][:10]]
-            def draw_res_bar(ax):
-                bars = ax.barh(range(len(res_names)), res_vals,
-                               color=[palette[i % len(palette)] for i in range(len(res_names))],
-                               height=0.6, edgecolor='white')
-                ax.set_yticks(range(len(res_names)))
-                ax.set_yticklabels(res_names, fontsize=9)
-                ax.set_xlabel('Hours', fontsize=9)
-                ax.tick_params(axis='x', labelsize=8)
-                ax.spines['top'].set_visible(False)
-                ax.spines['right'].set_visible(False)
-                ax.set_facecolor(mcolors.to_rgba('#F8FAFC'))
-                for bar, val in zip(bars, res_vals):
-                    ax.text(val + 0.05, bar.get_y() + bar.get_height()/2,
-                            f'{val:.1f}h', va='center', fontsize=8, color='#475569')
-            buf = _make_chart_png(draw_res_bar, width=520, height=max(180, len(res_names)*35))
-            story.append(RLImage(buf, width=15*cm, height=min(8*cm, len(res_names)*1.1*cm)))
+            res_vals  = [round(v, 2) for _, v in data['by_res'][:10]]
+            chart_h = max(2.2*cm, min(7*cm, len(res_names) * 1.1*cm))
+            story.append(_hbar_chart(res_names, res_vals, width=16.5*cm, height=chart_h, value_fmt='%.1fh'))
             story.append(Spacer(1, 0.3*cm))
 
         # ── Chart: Top Users ──
@@ -974,38 +999,14 @@ def print_usage_stats(request):
             story.append(Paragraph('Top Users by Hours', section_style))
             top = data['by_user'][:8]
             user_names = [u for u, _ in top]
-            user_vals  = [v for _, v in top]
-            def draw_user_bar(ax):
-                bars = ax.bar(range(len(user_names)), user_vals,
-                              color=[palette[i % len(palette)] for i in range(len(user_names))],
-                              width=0.6, edgecolor='white')
-                ax.set_xticks(range(len(user_names)))
-                ax.set_xticklabels(user_names, fontsize=8, rotation=30, ha='right')
-                ax.set_ylabel('Hours', fontsize=9)
-                ax.tick_params(axis='y', labelsize=8)
-                ax.spines['top'].set_visible(False)
-                ax.spines['right'].set_visible(False)
-                ax.set_facecolor(mcolors.to_rgba('#F8FAFC'))
-                ax.yaxis.set_major_locator(MaxNLocator(integer=True))
-            buf2 = _make_chart_png(draw_user_bar, width=520, height=220)
-            story.append(RLImage(buf2, width=15*cm, height=6.5*cm))
+            user_vals  = [round(v, 2) for _, v in top]
+            story.append(_vbar_chart(user_names, user_vals, width=16.5*cm, height=6.5*cm, value_fmt='%.1f'))
             story.append(Spacer(1, 0.3*cm))
 
         # ── Chart: Hour Distribution ──
         story.append(Paragraph('Booking Activity by Hour of Day', section_style))
-        def draw_hour(ax):
-            ax.fill_between(range(24), data['hcounts'],
-                            color='#4F46E5', alpha=0.3)
-            ax.plot(range(24), data['hcounts'], color='#4F46E5', linewidth=2, marker='o', markersize=4)
-            ax.set_xticks(range(0, 24, 2))
-            ax.set_xticklabels([f'{h:02d}:00' for h in range(0, 24, 2)], fontsize=7, rotation=30)
-            ax.set_ylabel('Bookings', fontsize=9)
-            ax.tick_params(axis='y', labelsize=8)
-            ax.spines['top'].set_visible(False)
-            ax.spines['right'].set_visible(False)
-            ax.set_facecolor(mcolors.to_rgba('#F8FAFC'))
-        buf3 = _make_chart_png(draw_hour, width=520, height=200)
-        story.append(RLImage(buf3, width=15*cm, height=5.5*cm))
+        hour_labels = [f'{h:02d}:00' if h % 2 == 0 else '' for h in range(24)]
+        story.append(_vbar_chart(hour_labels, data['hcounts'], width=16.5*cm, height=5.5*cm, value_fmt='%.0f'))
         story.append(Spacer(1, 0.3*cm))
 
         # ── Resource hours table ──
@@ -1017,13 +1018,13 @@ def print_usage_stats(request):
                 tdata.append([cell(rname), f'{hrs:.2f}', f'{hrs/total*100:.1f}%'])
             t = Table(tdata, colWidths=[9*cm, 3*cm, 3*cm])
             t.setStyle(TableStyle([
-                ('BACKGROUND',  (0, 0), (-1, 0), INDIGO),
+                ('BACKGROUND',  (0, 0), (-1, 0), INK),
                 ('TEXTCOLOR',   (0, 0), (-1, 0), colors.white),
                 ('FONTNAME',    (0, 0), (-1, 0), 'Helvetica-Bold'),
                 ('FONTSIZE',    (0, 0), (-1, -1), 9),
-                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, LIGHT]),
+                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, STRIPE]),
                 ('ALIGN',       (1, 0), (-1, -1), 'CENTER'),
-                ('GRID',        (0, 0), (-1, -1), 0.5, colors.HexColor('#E2E8F0')),
+                ('GRID',        (0, 0), (-1, -1), 0.5, BORDER),
                 ('TOPPADDING',  (0, 0), (-1, -1), 6),
                 ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
             ]))
@@ -1033,19 +1034,19 @@ def print_usage_stats(request):
         # ── Top users table ──
         if data['by_user']:
             story.append(Paragraph('Hours by User', section_style))
-            udata = [['Username', 'Total Hours', 'Share']]
+            udata = [['User', 'Total Hours', 'Share']]
             total = sum(v for _, v in data['by_user']) or 1
             for uname, hrs in data['by_user']:
                 udata.append([cell(uname), f'{hrs:.2f}', f'{hrs/total*100:.1f}%'])
             ut = Table(udata, colWidths=[9*cm, 3*cm, 3*cm])
             ut.setStyle(TableStyle([
-                ('BACKGROUND',  (0, 0), (-1, 0), TEAL),
+                ('BACKGROUND',  (0, 0), (-1, 0), SLATE),
                 ('TEXTCOLOR',   (0, 0), (-1, 0), colors.white),
                 ('FONTNAME',    (0, 0), (-1, 0), 'Helvetica-Bold'),
                 ('FONTSIZE',    (0, 0), (-1, -1), 9),
-                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, LIGHT]),
+                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, STRIPE]),
                 ('ALIGN',       (1, 0), (-1, -1), 'CENTER'),
-                ('GRID',        (0, 0), (-1, -1), 0.5, colors.HexColor('#E2E8F0')),
+                ('GRID',        (0, 0), (-1, -1), 0.5, BORDER),
                 ('TOPPADDING',  (0, 0), (-1, -1), 6),
                 ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
             ]))
@@ -1066,7 +1067,7 @@ def print_usage_stats(request):
                 d = (e - s).total_seconds() / 3600
             bdata.append([
                 str(i),
-                cell(b.user.get_full_name() or b.user.username),
+                cell(_display_name(b.user)),
                 cell(b.resource.name),
                 cell_muted(b.project_name),
                 cell_muted(b.start_time.astimezone(tz).strftime('%d-%b %H:%M')),
@@ -1075,14 +1076,14 @@ def print_usage_stats(request):
             ])
         bt = Table(bdata, colWidths=[1*cm, 3.5*cm, 3*cm, 3.5*cm, 2.5*cm, 2.5*cm, 1.5*cm])
         bt.setStyle(TableStyle([
-            ('BACKGROUND',    (0, 0), (-1, 0), colors.HexColor('#0F172A')),
+            ('BACKGROUND',    (0, 0), (-1, 0), INK),
             ('TEXTCOLOR',     (0, 0), (-1, 0), colors.white),
             ('FONTNAME',      (0, 0), (-1, 0), 'Helvetica-Bold'),
             ('FONTSIZE',      (0, 0), (-1, -1), 8),
-            ('ROWBACKGROUNDS',(0, 1), (-1, -1), [colors.white, LIGHT]),
+            ('ROWBACKGROUNDS',(0, 1), (-1, -1), [colors.white, STRIPE]),
             ('ALIGN',         (0, 0), (-1, -1), 'CENTER'),
             ('ALIGN',         (1, 1), (3, -1),  'LEFT'),
-            ('GRID',          (0, 0), (-1, -1), 0.3, colors.HexColor('#E2E8F0')),
+            ('GRID',          (0, 0), (-1, -1), 0.3, BORDER),
             ('TOPPADDING',    (0, 0), (-1, -1), 5),
             ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
         ]))
@@ -1105,8 +1106,10 @@ def print_usage_stats(request):
 @login_required
 def announcements(request):
     from .models import Announcement
-    return render(request, 'labapp/announcements.html', {
-        'announcements': Announcement.objects.select_related('author').all().order_by('-created_at')})
+    ann_list = Announcement.objects.select_related('author').all().order_by('-created_at')
+    request.user.last_seen_announcements = timezone.now()
+    request.user.save(update_fields=['last_seen_announcements'])
+    return render(request, 'labapp/announcements.html', {'announcements': ann_list})
 
 
 @never_cache
@@ -1181,6 +1184,8 @@ def weekly_updates(request):
         updates = WeeklyUpdate.objects.select_related('user').all().order_by('-created_at')
     else:
         updates = WeeklyUpdate.objects.filter(user=request.user).order_by('-created_at')
+    request.user.last_seen_weekly_updates = timezone.now()
+    request.user.save(update_fields=['last_seen_weekly_updates'])
     return render(request, 'labapp/weekly_updates.html', {'updates': updates})
 
 

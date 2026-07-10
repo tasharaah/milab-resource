@@ -18,12 +18,11 @@
         <tr>
           <th>User</th>
           <th>Resource</th>
-          <th>Software</th>
+          <th>Project Name</th>
           <th>Start Time</th>
           <th>End Time</th>
           <th>Status</th>
           <th>Description</th>
-          <th>Released At</th>
           {% if user.is_staff or user.is_superuser or user.role == 'Faculty' %}
           <th>Action</th>
           {% endif %}
@@ -34,7 +33,7 @@
         <tr>
           <td style="font-weight:500; color:var(--text-primary);">{{ booking.user.get_full_name|default:booking.user.username }}</td>
           <td>{{ booking.resource.name }}</td>
-          <td>{{ booking.software|default:'—' }}</td>
+          <td>{{ booking.project_name|default:'—' }}</td>
           <td style="font-size:.82rem; color:var(--text-muted);">{{ booking.start_time|date:'d M, Y h:i A' }}</td>
           <td style="font-size:.82rem; color:var(--text-muted);">{{ booking.end_time|date:'d M, Y h:i A' }}</td>
           <td>
@@ -47,7 +46,6 @@
           <td style="color:var(--text-muted); max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
             {{ booking.description|default:'—' }}
           </td>
-          <td style="font-size:.82rem; color:var(--text-muted);">{{ booking.released_at|date:'d M, Y h:i A'|default:'—' }}</td>
           {% if user.is_staff or user.is_superuser or user.role == 'Faculty' %}
           <td>
             {% if booking.currently_active %}
