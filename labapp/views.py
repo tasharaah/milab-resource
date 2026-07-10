@@ -846,7 +846,7 @@ def _hbar_chart(labels, values, width, height, value_fmt='%.1fh'):
 
     # Give labels space after the longest bar
     max_val = max(values) if values else 0
-    bc.valueAxis.valueMax = max(max_val * 1.15, 1)
+    bc.valueAxis.valueMax = max(max_val * 1.25, 1)
 
     bc.valueAxis.labels.fontSize = 7.5
     bc.valueAxis.labels.fillColor = colors.HexColor('#475569')
@@ -857,7 +857,8 @@ def _hbar_chart(labels, values, width, height, value_fmt='%.1fh'):
     bc.barLabelFormat = value_fmt
     bc.barLabels.fontSize = 7.5
     bc.barLabels.fillColor = colors.HexColor('#1E293B')
-    bc.barLabels.nudge = 5
+    bc.barLabels.nudge = 8
+    bc.barLabels.boxAnchor = 'w'
 
     d.add(bc)
     return d
@@ -1113,6 +1114,7 @@ def print_usage_stats(request):
                 ('TEXTCOLOR',   (0, 0), (-1, 0), colors.white),
                 ('FONTNAME',    (0, 0), (-1, 0), 'Helvetica-Bold'),
                 ('FONTSIZE',    (0, 0), (-1, -1), 9),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
                 ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, STRIPE]),
                 ('ALIGN',       (1, 0), (-1, -1), 'CENTER'),
                 ('GRID',        (0, 0), (-1, -1), 0.5, BORDER),
@@ -1136,6 +1138,7 @@ def print_usage_stats(request):
                 ('FONTNAME',    (0, 0), (-1, 0), 'Helvetica-Bold'),
                 ('FONTSIZE',    (0, 0), (-1, -1), 9),
                 ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, STRIPE]),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
                 ('ALIGN',       (1, 0), (-1, -1), 'CENTER'),
                 ('GRID',        (0, 0), (-1, -1), 0.5, BORDER),
                 ('TOPPADDING',  (0, 0), (-1, -1), 6),
@@ -1186,6 +1189,7 @@ def print_usage_stats(request):
             ('ROWBACKGROUNDS',(0, 1), (-1, -1), [colors.white, STRIPE]),
             ('ALIGN',         (0, 0), (-1, -1), 'CENTER'),
             ('ALIGN',         (1, 1), (3, -1),  'LEFT'),
+            ('VALIGN',        (0, 0), (-1, -1), 'MIDDLE'),
             ('GRID',          (0, 0), (-1, -1), 0.3, BORDER),
             ('TOPPADDING',    (0, 0), (-1, -1), 5),
             ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
