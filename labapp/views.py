@@ -5,6 +5,8 @@ from __future__ import annotations
 
 import json
 from typing import Any, Dict
+from arrow import now
+from arrow import now
 import requests
 
 from django.conf import settings
@@ -17,6 +19,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
+from django.db.models import Q
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter, A4
@@ -24,7 +27,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch, cm
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
-    PageBreak, HRFlowable,
+    PageBreak, HRFlowable, KeepTogether,
 )
 from reportlab.graphics.shapes import Drawing
 from reportlab.graphics.charts.barcharts import HorizontalBarChart, VerticalBarChart
@@ -717,8 +720,14 @@ def stats(request):
     ra_p = request.GET.get('ra', 'all')
     re_p = request.GET.get('resource', 'all')
     bqs = Booking.objects.all().select_related('user', 'resource')
-    if sd: bqs = bqs.filter(start_time__gte=sd)
-    if ed: bqs = bqs.filter(start_time__lte=ed)
+    if ed:
+        bqs = bqs.filter(start_time__lt=ed)
+
+    if sd:
+        bqs = bqs.filter(
+            Q(end_time__isnull=True) |
+            Q(end_time__gt=sd)
+        )
     if ra_p != 'all':
         try: bqs = bqs.filter(user__id=int(ra_p))
         except ValueError: pass
@@ -769,12 +778,18 @@ def _build_report_data(ra_param, resource_param, project_param, period, start_pa
         elif period == 'last_3_months': sd, ed = now - timezone.timedelta(days=90),  now
         elif period == 'last_year':     sd, ed = now - timezone.timedelta(days=365), now
         elif period == 'all':           sd = ed = None
-    if sd is None and ed is None:
+    if sd is None and ed is None and period != 'all':
         sd, ed = now - timezone.timedelta(days=7), now
 
     bqs = Booking.objects.all().select_related('user', 'resource')
-    if sd:  bqs = bqs.filter(start_time__gte=sd)
-    if ed:  bqs = bqs.filter(start_time__lte=ed)
+    if ed:
+        bqs = bqs.filter(start_time__lt=ed)
+
+    if sd:
+        bqs = bqs.filter(
+            Q(end_time__isnull=True) |
+            Q(end_time__gt=sd)
+        )
     if ra_param != 'all':
         try: bqs = bqs.filter(user__id=int(ra_param))
         except ValueError: pass
@@ -809,33 +824,55 @@ def _build_report_data(ra_param, resource_param, project_param, period, start_pa
 
 
 def _hbar_chart(labels, values, width, height, value_fmt='%.1fh'):
-    """A simple grayscale horizontal bar chart (reportlab native, no images)."""
     d = Drawing(width, height)
+
     left_margin = min(140, max(70, width * 0.32))
+
     bc = HorizontalBarChart()
     bc.x = left_margin
     bc.y = 14
     bc.height = max(20, height - 30)
     bc.width = max(40, width - left_margin - 45)
+
     bc.data = [values]
-    bc.categoryAxis.categoryNames = [str(l)[:24] for l in labels]
+
+    bc.categoryAxis.categoryNames = [
+        str(l)[:24] for l in labels
+    ]
+
     bc.categoryAxis.labels.fontName = 'Helvetica'
     bc.categoryAxis.labels.fontSize = 8
     bc.categoryAxis.labels.fillColor = colors.HexColor('#1E293B')
+
     bc.valueAxis.valueMin = 0
+
+    # Give labels space after the longest bar
+    max_val = max(values) if values else 0
+    bc.valueAxis.valueMax = max(max_val * 1.15, 1)
+
     bc.valueAxis.labels.fontSize = 7.5
     bc.valueAxis.labels.fillColor = colors.HexColor('#475569')
+
     bc.bars[0].fillColor = colors.HexColor('#334155')
     bc.bars.strokeColor = None
+
     bc.barLabelFormat = value_fmt
     bc.barLabels.fontSize = 7.5
     bc.barLabels.fillColor = colors.HexColor('#1E293B')
-    bc.barLabels.nudge = 8
+    bc.barLabels.nudge = 5
+
     d.add(bc)
     return d
 
 
-def _vbar_chart(labels, values, width, height, value_fmt='%.1f'):
+def _vbar_chart(
+    labels,
+    values,
+    width,
+    height,
+    value_fmt='%.1f',
+    hide_zero_labels=False,
+):
     """A simple grayscale vertical bar chart (reportlab native, no images)."""
     d = Drawing(width, height)
     bottom_margin = 55
@@ -854,11 +891,16 @@ def _vbar_chart(labels, values, width, height, value_fmt='%.1f'):
     bc.categoryAxis.labels.dx = -4
     bc.categoryAxis.labels.boxAnchor = 'ne'
     bc.valueAxis.valueMin = 0
+    max_val = max(values) if values else 0
+    bc.valueAxis.valueMax = max(max_val * 1.15, 1)
     bc.valueAxis.labels.fontSize = 7.5
     bc.valueAxis.labels.fillColor = colors.HexColor('#475569')
     bc.bars[0].fillColor = colors.HexColor('#334155')
     bc.bars.strokeColor = None
-    bc.barLabelFormat = value_fmt
+    if hide_zero_labels:
+        bc.barLabelFormat = lambda v: '' if v == 0 else value_fmt % v
+    else:
+        bc.barLabelFormat = value_fmt
     bc.barLabels.fontSize = 7.5
     bc.barLabels.fillColor = colors.HexColor('#1E293B')
     bc.barLabels.dy = 6
@@ -914,13 +956,35 @@ def print_usage_stats(request):
 
         # Custom styles — a clean black & white report (no images, no color
         # dependency, so nothing can distort or render oddly across viewers).
-        title_style = ParagraphStyle('ReportTitle', fontSize=20, fontName='Helvetica-Bold',
-                                      textColor=colors.HexColor('#0F172A'), spaceAfter=4,
-                                      alignment=TA_LEFT)
-        sub_style   = ParagraphStyle('ReportSub',   fontSize=10, fontName='Helvetica',
-                                      textColor=colors.HexColor('#475569'), spaceAfter=16)
-        section_style = ParagraphStyle('Section', fontSize=13, fontName='Helvetica-Bold',
-                                        textColor=colors.HexColor('#0F172A'), spaceBefore=16, spaceAfter=8)
+        title_style = ParagraphStyle(
+            'ReportTitle',
+            fontSize=20,
+            leading=24,
+            fontName='Helvetica-Bold',
+            textColor=colors.HexColor('#0F172A'),
+            spaceAfter=6,
+            alignment=TA_LEFT,
+        )
+
+        sub_style = ParagraphStyle(
+            'ReportSub',
+            fontSize=10,
+            leading=13,
+            fontName='Helvetica',
+            textColor=colors.HexColor('#475569'),
+            spaceAfter=16,
+        )
+
+        section_style = ParagraphStyle(
+            'Section',
+            fontSize=13,
+            leading=16,
+            fontName='Helvetica-Bold',
+            textColor=colors.HexColor('#0F172A'),
+            spaceBefore=16,
+            spaceAfter=8,
+            keepWithNext=True,
+        )
         body_style  = ParagraphStyle('Body', fontSize=9, fontName='Helvetica',
                                       textColor=colors.HexColor('#475569'), leading=14)
 
@@ -997,16 +1061,45 @@ def print_usage_stats(request):
         # ── Chart: Top Users ──
         if data['by_user']:
             story.append(Paragraph('Top Users by Hours', section_style))
+
             top = data['by_user'][:8]
             user_names = [u for u, _ in top]
-            user_vals  = [round(v, 2) for _, v in top]
-            story.append(_vbar_chart(user_names, user_vals, width=16.5*cm, height=6.5*cm, value_fmt='%.1f'))
+            user_vals = [round(v, 2) for _, v in top]
+
+            story.append(
+                _vbar_chart(
+                    user_names,
+                    user_vals,
+                    width=16.5*cm,
+                    height=6.2*cm,
+                    value_fmt='%.1f',
+                )
+            )
+
             story.append(Spacer(1, 0.3*cm))
 
         # ── Chart: Hour Distribution ──
-        story.append(Paragraph('Booking Activity by Hour of Day', section_style))
-        hour_labels = [f'{h:02d}:00' if h % 2 == 0 else '' for h in range(24)]
-        story.append(_vbar_chart(hour_labels, data['hcounts'], width=16.5*cm, height=5.5*cm, value_fmt='%.0f'))
+        hour_labels = [
+            f'{h:02d}:00' if h % 2 == 0 else ''
+            for h in range(24)
+        ]
+
+        hour_chart = _vbar_chart(
+            hour_labels,
+            data['hcounts'],
+            width=16.5*cm,
+            height=5.5*cm,
+            value_fmt='%.0f',
+            hide_zero_labels=True,
+        )
+
+        story.append(
+            KeepTogether([
+                Paragraph('Booking Activity by Hour of Day', section_style),
+                hour_chart,
+                Spacer(1, 0.3*cm),
+            ])
+        )
         story.append(Spacer(1, 0.3*cm))
 
         # ── Resource hours table ──
@@ -1054,7 +1147,6 @@ def print_usage_stats(request):
             story.append(Spacer(1, 0.3*cm))
 
         # ── Detailed bookings table ──
-        story.append(PageBreak())
         story.append(Paragraph('Detailed Booking Log', section_style))
         bdata = [['#', 'User', 'Resource', 'Project', 'Start', 'End', 'Duration']]
         tz = timezone.get_current_timezone()
@@ -1074,7 +1166,20 @@ def print_usage_stats(request):
                 cell_muted(b.end_time.astimezone(tz).strftime('%d-%b %H:%M') if b.end_time else '—'),
                 f'{d:.1f}h',
             ])
-        bt = Table(bdata, colWidths=[1*cm, 3.5*cm, 3*cm, 3.5*cm, 2.5*cm, 2.5*cm, 1.5*cm])
+        bt = Table(
+            bdata,
+            colWidths=[
+                1*cm,
+                3.5*cm,
+                3*cm,
+                3.5*cm,
+                2.5*cm,
+                2.5*cm,
+                1.5*cm,
+            ],
+            repeatRows=1,
+            splitByRow=1,
+        )
         bt.setStyle(TableStyle([
             ('BACKGROUND',    (0, 0), (-1, 0), INK),
             ('TEXTCOLOR',     (0, 0), (-1, 0), colors.white),
