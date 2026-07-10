@@ -1188,7 +1188,6 @@ def print_usage_stats(request):
             ('FONTSIZE',      (0, 0), (-1, -1), 8),
             ('ROWBACKGROUNDS',(0, 1), (-1, -1), [colors.white, STRIPE]),
             ('ALIGN',         (0, 0), (-1, -1), 'CENTER'),
-            ('ALIGN',         (1, 1), (3, -1),  'LEFT'),
             ('VALIGN',        (0, 0), (-1, -1), 'MIDDLE'),
             ('GRID',          (0, 0), (-1, -1), 0.3, BORDER),
             ('TOPPADDING',    (0, 0), (-1, -1), 5),
