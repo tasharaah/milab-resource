@@ -5,8 +5,6 @@ from __future__ import annotations
 
 import json
 from typing import Any, Dict
-from arrow import now
-from arrow import now
 import requests
 
 from django.conf import settings
