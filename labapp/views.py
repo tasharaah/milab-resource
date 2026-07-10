@@ -1019,31 +1019,57 @@ def print_usage_stats(request):
 
         # ── Summary stat boxes ──
         total_hrs = sum(v for _, v in data['by_res'])
+        stat_label_style = ParagraphStyle(
+            'StatLabel',
+            fontName='Helvetica-Bold',
+            fontSize=9,
+            leading=11,
+            textColor=colors.white,
+            alignment=TA_CENTER,
+        )
+
+        stat_value_style = ParagraphStyle(
+            'StatValue',
+            fontName='Helvetica-Bold',
+            fontSize=18,
+            leading=22,
+            textColor=INK,
+            alignment=TA_CENTER,
+        )
+
         stat_data = [
-            ['Total Bookings', 'Total Hours', 'Resources Used', 'Users Active'],
             [
-                str(len(data['bookings'])),
-                f"{total_hrs:.1f} hrs",
-                str(len(data['by_res'])),
-                str(len(data['by_user'])),
-            ]
+                Paragraph('Total Bookings', stat_label_style),
+                Paragraph('Total Hours', stat_label_style),
+                Paragraph('Resources Used', stat_label_style),
+                Paragraph('Users Active', stat_label_style),
+            ],
+            [
+                Paragraph(str(len(data['bookings'])), stat_value_style),
+                Paragraph(f'{total_hrs:.1f} hrs', stat_value_style),
+                Paragraph(str(len(data['by_res'])), stat_value_style),
+                Paragraph(str(len(data['by_user'])), stat_value_style),
+            ],
         ]
-        stat_table = Table(stat_data, colWidths=[(W - 3*cm) / 4] * 4)
+        stat_table = Table(
+            stat_data,
+            colWidths=[(W - 3*cm) / 4] * 4,
+            rowHeights=[1.25*cm, 1.55*cm],
+        )
         stat_table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), INK),
-            ('TEXTCOLOR',  (0, 0), (-1, 0), colors.white),
-            ('FONTNAME',   (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE',   (0, 0), (-1, 0), 9),
-            ('FONTNAME',   (0, 1), (-1, 1), 'Helvetica-Bold'),
-            ('FONTSIZE',   (0, 1), (-1, 1), 18),
-            ('TEXTCOLOR',  (0, 1), (-1, 1), INK),
             ('BACKGROUND', (0, 1), (-1, 1), STRIPE),
-            ('ALIGN',      (0, 0), (-1, -1), 'CENTER'),
-            ('VALIGN',     (0, 0), (-1, -1), 'MIDDLE'),
-            ('BOX',        (0, 0), (-1, -1), 1, BORDER),
-            ('INNERGRID',  (0, 0), (-1, -1), 0.5, BORDER),
-            ('TOPPADDING', (0, 0), (-1, -1), 10),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+
+            ('BOX', (0, 0), (-1, -1), 1, BORDER),
+            ('INNERGRID', (0, 0), (-1, -1), 0.5, BORDER),
+
+            ('LEFTPADDING', (0, 0), (-1, -1), 4),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 4),
+            ('TOPPADDING', (0, 0), (-1, -1), 0),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
         ]))
         story.append(stat_table)
         story.append(Spacer(1, 0.4*cm))
